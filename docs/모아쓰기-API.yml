@@ -1,0 +1,1016 @@
+openapi: 3.0.3
+
+info:
+  title: 브레인라이팅 웹 서비스 API
+  version: 1.0.0
+  description: |
+    안건 생성, 독립적인 아이디어 작성·평가, 평가 분포 조회와 최종 채택을 위한 REST API 명세입니다.
+
+    ## 인증
+    - 회원은 로그인 시 발급된 JWT Access Token을 `Authorization: Bearer {token}` 형식으로 보냅니다.
+    - 비회원 참가자는 참가 시 발급된 세션별 재접속 토큰을 `X-Participant-Token` 헤더로 보냅니다.
+    - 로그인은 선택이지만, 안건을 생성·수정·조기 종료·최종 채택하려면 회원 인증이 필요합니다.
+
+    ## 단계 전환
+    - 안건 상태는 `WRITING → EVALUATING → RESULT_PENDING_SELECTION → COMPLETED`로 전환됩니다.
+    - 작성 단계에서 아이디어가 0개인 채 종료되면 `NO_IDEAS`가 됩니다.
+    - 작성·평가 단계는 마감시각 도달 또는 진행자의 조기 종료로 전환됩니다.
+    - 참가자 전원이 작성이나 평가를 마쳤다는 이유로는 자동 종료하지 않습니다.
+
+    ## 공개 범위
+    - 작성 중에는 다른 참가자의 아이디어를 공개하지 않습니다.
+    - 평가 중에는 다른 참가자의 평가와 중간 집계를 공개하지 않습니다.
+    - 결과는 점수와 순위 없이 `좋음 / 괜찮음 / 별로` 분포로만 공개합니다.
+    - 최종 채택 후에도 채택된 아이디어의 작성자 닉네임만 공개합니다.
+
+servers:
+  - url: http://localhost:8080/api
+    description: 로컬 개발 서버
+
+tags:
+  - name: Auth
+    description: 회원가입과 로그인
+  - name: User
+    description: 현재 로그인 사용자
+  - name: Session
+    description: 안건 생성, 조회, 수정과 단계 제어
+  - name: Participant
+    description: 안건 참가와 참가자 조회
+  - name: Idea
+    description: 아이디어 작성, 수정과 삭제
+  - name: Evaluation
+    description: 평가 대상 조회와 평가 저장
+  - name: Result
+    description: 평가 결과 조회와 최종 채택
+
+paths:
+  /auth/signup:
+    post:
+      tags: [Auth]
+      summary: 회원가입
+      description: |
+        아이디와 비밀번호로 새 회원 계정을 만듭니다.
+        아이디가 이미 사용 중이면 가입할 수 없습니다.
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: 회원가입 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 로그인
+      description: |
+        아이디와 비밀번호를 확인하고 JWT Access Token을 발급합니다.
+        후속 회원 인증 API에서는 발급된 토큰을 Authorization 헤더에 보냅니다.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/me:
+    get:
+      tags: [User]
+      summary: 현재 로그인 사용자 조회
+      description: |
+        Authorization 헤더의 Access Token을 기준으로 현재 로그인한 사용자를 조회합니다.
+        새로고침 후 사용자 표시를 복원하거나 저장된 토큰이 유효한지 확인할 때 사용합니다.
+        이 API 자체가 로그인을 유지하는 것은 아니며, 로그인 유지는 클라이언트에 저장된 토큰으로 이루어집니다.
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 현재 로그인 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /sessions:
+    post:
+      tags: [Session]
+      summary: 새 안건 생성
+      description: |
+        로그인한 사용자가 제목, 설명, 작성 마감시각과 평가 마감시각을 설정하여 안건을 엽니다.
+        생성자가 해당 안건의 진행자가 되며 초기 상태는 `WRITING`입니다.
+      operationId: createSession
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCreateRequest'
+      responses:
+        '201':
+          description: 안건 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /sessions/hosted:
+    get:
+      tags: [Session]
+      summary: 내가 만든 안건 목록 조회
+      description: |
+        현재 로그인한 사용자가 진행자로서 만든 안건을 조회합니다.
+        `내가 만든 안건` 화면에서 관리할 안건을 고를 때 사용합니다.
+      operationId: getHostedSessions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 안건 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /sessions/participated:
+    get:
+      tags: [Session]
+      summary: 내가 참가한 안건 목록 조회
+      description: |
+        현재 로그인한 계정으로 참가한 안건을 조회합니다.
+        비회원으로 참가한 기록은 계정과 연결되지 않으므로 이 목록에 포함되지 않습니다.
+      operationId: getParticipatedSessions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 참가한 안건 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /sessions/{sessionId}:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      tags: [Session]
+      summary: 안건 상세 및 현재 단계 조회
+      description: |
+        공유 링크 진입, 새로고침, 마감 후 화면 전환 시 안건의 현재 정보를 조회합니다.
+        응답에는 서버 현재 시각, 안건 상태, 마감시각, 참가자 수와 현재 요청자의 진행자·참가 여부가 포함됩니다.
+        로그인 토큰 또는 재접속 토큰은 선택적으로 보낼 수 있습니다.
+      operationId: getSession
+      security:
+        - bearerAuth: []
+        - participantToken: []
+        - {}
+      responses:
+        '200':
+          description: 안건 상세
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Session]
+      summary: 안건 정보와 마감시각 수정
+      description: |
+        진행자가 안건의 제목, 설명, 작성 마감시각 또는 평가 마감시각을 수정합니다.
+        변경할 필드만 요청에 포함하며, 현재 단계에 따라 다음과 같이 제한합니다.
+        - `WRITING`: 제목, 설명, 작성 마감, 평가 마감 수정 가능
+        - `EVALUATING`: 평가 마감만 수정 가능
+        - 결과 단계: 수정 불가
+        요청에 포함되지 않은 필드는 기존 값을 유지한 뒤, 저장되는 최종 `writingEndsAt`과 `evaluationEndsAt`이
+        `writingEndsAt < evaluationEndsAt`을 만족하는지 검증합니다. 조건을 만족하지 않으면 `400 Bad Request`를 반환합니다.
+      operationId: updateSession
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionUpdateRequest'
+      responses:
+        '200':
+          description: 수정된 안건
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sessions/{sessionId}/participants:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    post:
+      tags: [Participant]
+      summary: 안건 참가
+      description: |
+        공유 링크로 접속한 사용자가 세션 내 닉네임을 정하고 안건에 참가합니다.
+        신규 참가는 `WRITING` 단계에서만 가능합니다.
+        회원 토큰은 선택적이며, 비회원으로 참가하면 응답에 재접속 토큰이 포함됩니다.
+      operationId: joinSession
+      security:
+        - bearerAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinSessionRequest'
+      responses:
+        '201':
+          description: 안건 참가 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 닉네임 중복, 이미 참가한 회원 또는 참가 가능 단계 종료
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags: [Participant]
+      summary: 참가자 목록 조회
+      description: |
+        진행자가 공유·대기실에 표시할 참가자 닉네임 목록을 조회합니다.
+        작성·평가 완료 여부, 아이디어 개수·내용, 개별 평가 내용은 반환하지 않습니다.
+      operationId: getParticipants
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 참가자 닉네임 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParticipantSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/ideas:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    put:
+      tags: [Idea]
+      summary: 아이디어 저장
+      description: |
+        사용자가 항목의 `저장`을 누를 때 현재 참가자의 아이디어 하나를 저장합니다. 자동 저장하지 않습니다.
+        요청에 `id`가 없으면 새 아이디어를 생성하고, `id`가 있으면 현재 참가자가 소유한 해당 아이디어를 수정합니다.
+        `WRITING` 단계에서만 가능하며 참가자 한 명은 최대 3개까지 저장할 수 있습니다.
+        마감 또는 조기 종료 시 브라우저의 미저장 입력은 자동 저장하지 않습니다.
+      operationId: putIdea
+      security:
+        - bearerAuth: []
+        - participantToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdeaWriteRequest'
+      responses:
+        '200':
+          description: 아이디어 생성 또는 수정 성공. 새로 생성한 경우 프론트가 이후 저장에 사용할 ID를 반환합니다.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Idea'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sessions/{sessionId}/ideas/me:
+    get:
+      tags: [Idea]
+      summary: 내 아이디어 목록 조회
+      description: |
+        현재 요청자가 해당 안건에 작성한 아이디어만 조회합니다.
+        아이디어 작성 화면의 초기 표시, 새로고침 또는 재접속 후 복원에 사용합니다.
+        다른 참가자의 아이디어는 반환하지 않습니다.
+      operationId: getMyIdeas
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      security:
+        - bearerAuth: []
+        - participantToken: []
+      responses:
+        '200':
+          description: 내 아이디어 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 3
+                items:
+                  $ref: '#/components/schemas/Idea'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/ideas/{ideaId}:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/IdeaId'
+    delete:
+      tags: [Idea]
+      summary: 내 아이디어 삭제
+      description: |
+        현재 참가자가 자신이 작성한 아이디어를 삭제합니다.
+        `WRITING` 단계에서만 가능하며 삭제한 아이디어는 복구하지 않습니다.
+      operationId: deleteIdea
+      security:
+        - bearerAuth: []
+        - participantToken: []
+      responses:
+        '204':
+          description: 삭제 성공
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sessions/{sessionId}/close-writing:
+    post:
+      tags: [Session]
+      summary: 작성 단계 조기 종료
+      description: |
+        진행자가 작성 마감시각을 기다리지 않고 작성 단계를 즉시 종료합니다.
+        아이디어가 하나 이상이면 `EVALUATING`, 0개이면 `NO_IDEAS`로 전환됩니다.
+        이후에는 신규 참가와 아이디어 생성·수정·삭제가 불가합니다.
+      operationId: closeWriting
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 전환된 안건 상태
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sessions/{sessionId}/evaluation-items:
+    get:
+      tags: [Evaluation]
+      summary: 내 평가 대상 조회
+      description: |
+        현재 참가자가 평가해야 할 다른 참가자의 아이디어를 조회합니다.
+        본인 아이디어는 제외하고 작성자 닉네임, 다른 참가자의 평가, 중간 집계는 반환하지 않습니다.
+        재접속 시 평가를 복원할 수 있도록 각 아이디어에 대한 나의 기존 평가는 함께 반환합니다.
+      operationId: getEvaluationItems
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      security:
+        - bearerAuth: []
+        - participantToken: []
+      responses:
+        '200':
+          description: 내 평가 대상
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvaluationItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sessions/{sessionId}/evaluations:
+    put:
+      tags: [Evaluation]
+      summary: 개별 평가 저장
+      description: |
+        사용자가 항목의 `저장`을 누를 때 현재 참가자의 개별 평가 하나를 저장합니다. 선택만으로는 자동 저장하지 않습니다.
+        현재 참가자와 `ideaId`의 조합으로 Upsert하며, 기존 평가가 있으면 `value`를 수정합니다.
+        `EVALUATING` 단계에서만 가능하며 본인 아이디어는 평가할 수 없습니다.
+        마감 또는 조기 종료 시 브라우저의 미저장 선택은 자동 저장하지 않습니다.
+      operationId: putEvaluation
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      security:
+        - bearerAuth: []
+        - participantToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationWriteRequest'
+      responses:
+        '200':
+          description: 평가 저장 또는 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evaluation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sessions/{sessionId}/close-evaluation:
+    post:
+      tags: [Session]
+      summary: 평가 단계 조기 종료
+      description: |
+        진행자가 평가 마감시각을 기다리지 않고 평가 단계를 즉시 종료합니다.
+        안건은 `RESULT_PENDING_SELECTION`으로 전환되고, 미평가 아이디어는 값 없음으로 남습니다.
+        종료 후에는 평가를 새로 저장하거나 수정할 수 없습니다.
+      operationId: closeEvaluation
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 전환된 안건 상태
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sessions/{sessionId}/results:
+    get:
+      tags: [Result]
+      summary: 평가 분포와 최종 결과 조회
+      description: |
+        평가가 종료된 안건의 아이디어별 `좋음 / 괜찮음 / 별로` 분포를 조회합니다.
+        공유 링크를 알고 있다면 로그인 없이 조회할 수 있습니다.
+        `RESULT_PENDING_SELECTION`에서는 모든 작성자를 숨기고, `COMPLETED`에서는 채택된 아이디어의 작성자 닉네임만 공개합니다.
+      operationId: getResults
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      security: []
+      responses:
+        '200':
+          description: 평가 및 최종 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 아직 결과를 공개할 단계가 아님
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/{sessionId}/select-idea:
+    post:
+      tags: [Result]
+      summary: 최종 아이디어 채택
+      description: |
+        진행자가 평가 분포를 참고한 회의 후 해당 안건의 아이디어 하나를 최종 채택합니다.
+        `RESULT_PENDING_SELECTION` 단계에서만 가능하며 채택 후 안건은 `COMPLETED`로 전환됩니다.
+        최종 채택은 변경할 수 없습니다.
+      operationId: selectIdea
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelectIdeaRequest'
+      responses:
+        '200':
+          description: 최종 채택이 반영된 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 로그인 시 발급된 회원 Access Token
+    participantToken:
+      type: apiKey
+      in: header
+      name: X-Participant-Token
+      description: 비회원 참가자의 세션별 재접속 토큰
+
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      description: 안건 식별자
+      schema:
+        type: string
+        format: uuid
+    IdeaId:
+      name: ideaId
+      in: path
+      required: true
+      description: 아이디어 식별자
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    SessionStatus:
+      type: string
+      description: 안건의 현재 단계
+      enum:
+        - WRITING
+        - EVALUATING
+        - RESULT_PENDING_SELECTION
+        - COMPLETED
+        - NO_IDEAS
+
+    SignupRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: haemil
+        password:
+          type: string
+          format: password
+          minLength: 8
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: haemil
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      type: object
+      required: [accessToken, tokenType, user]
+      properties:
+        accessToken:
+          type: string
+          description: JWT Access Token
+        tokenType:
+          type: string
+          example: Bearer
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      required: [id, username, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          example: haemil
+        createdAt:
+          type: string
+          format: date-time
+
+    SessionCreateRequest:
+      type: object
+      required: [title, writingEndsAt, evaluationEndsAt]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: 신규 서비스 아이디어
+        description:
+          type: string
+          nullable: true
+          example: 고객 불편을 줄일 아이디어를 적어주세요.
+        writingEndsAt:
+          type: string
+          format: date-time
+          description: 작성 마감시각. 서버 현재 시각보다 뒤여야 합니다.
+        evaluationEndsAt:
+          type: string
+          format: date-time
+          description: 평가 마감시각. 작성 마감시각보다 뒤여야 합니다.
+
+    SessionUpdateRequest:
+      type: object
+      minProperties: 1
+      description: 변경할 필드만 포함합니다.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+        writingEndsAt:
+          type: string
+          format: date-time
+        evaluationEndsAt:
+          type: string
+          format: date-time
+
+    SessionSummary:
+      type: object
+      required: [id, title, status, writingEndsAt, evaluationEndsAt, participantCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        writingEndsAt:
+          type: string
+          format: date-time
+        evaluationEndsAt:
+          type: string
+          format: date-time
+        participantCount:
+          type: integer
+          minimum: 0
+
+    SessionDetail:
+      allOf:
+        - $ref: '#/components/schemas/SessionSummary'
+        - type: object
+          required: [serverTime, viewer]
+          properties:
+            serverTime:
+              type: string
+              format: date-time
+              description: 클라이언트 타이머 보정에 사용하는 서버 현재 시각
+            selectedIdeaId:
+              type: string
+              format: uuid
+              nullable: true
+            viewer:
+              $ref: '#/components/schemas/SessionViewer'
+
+    SessionViewer:
+      type: object
+      description: 현재 요청자와 안건의 관계. 인증 정보가 없으면 모두 false/null입니다.
+      required: [isHost, isParticipant]
+      properties:
+        isHost:
+          type: boolean
+        isParticipant:
+          type: boolean
+        participantId:
+          type: string
+          format: uuid
+          nullable: true
+        nickname:
+          type: string
+          nullable: true
+
+    JoinSessionRequest:
+      type: object
+      required: [nickname]
+      properties:
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 30
+          description: 앞뒤 공백을 제거한 후 세션 내에서 중복되지 않아야 합니다.
+          example: 해밀
+
+    JoinSessionResponse:
+      type: object
+      required: [participant]
+      properties:
+        participant:
+          $ref: '#/components/schemas/ParticipantSummary'
+        reconnectToken:
+          type: string
+          nullable: true
+          description: 비회원 참가 시에만 발급되는 세션별 재접속 토큰
+
+    ParticipantSummary:
+      type: object
+      required: [id, nickname, isHost]
+      description: 대기실에 표시할 최소 참가자 정보
+      properties:
+        id:
+          type: string
+          format: uuid
+        nickname:
+          type: string
+        isHost:
+          type: boolean
+
+    IdeaWriteRequest:
+      type: object
+      required: [content]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 첫 저장에서는 생략하고, 수정 저장에서는 서버가 반환한 아이디어 ID를 보냅니다.
+        content:
+          type: string
+          minLength: 1
+          description: 공백만으로 구성된 내용은 허용하지 않습니다.
+          example: 회의 시간을 절반으로 줄인다.
+
+    Idea:
+      type: object
+      required: [id, content, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    EvaluationItem:
+      type: object
+      required: [ideaId, content]
+      properties:
+        ideaId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        myEvaluation:
+          type: integer
+          nullable: true
+          enum: [-1, 0, 1]
+          description: 현재 참가자의 기존 평가. 아직 평가하지 않았으면 null입니다.
+
+    EvaluationWriteRequest:
+      type: object
+      required: [ideaId, value]
+      properties:
+        ideaId:
+          type: string
+          format: uuid
+          description: 평가할 아이디어 ID
+        value:
+          type: integer
+          enum: [-1, 0, 1]
+          description: 좋음 1, 괜찮음 0, 별로 -1
+
+    Evaluation:
+      type: object
+      required: [ideaId, value, updatedAt]
+      properties:
+        ideaId:
+          type: string
+          format: uuid
+        value:
+          type: integer
+          enum: [-1, 0, 1]
+        updatedAt:
+          type: string
+          format: date-time
+
+    SelectIdeaRequest:
+      type: object
+      required: [ideaId]
+      properties:
+        ideaId:
+          type: string
+          format: uuid
+          description: 해당 안건에 속한 최종 채택 아이디어 ID
+
+    ResultResponse:
+      type: object
+      required: [sessionId, status, ideas]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [RESULT_PENDING_SELECTION, COMPLETED]
+        ideas:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdeaResult'
+
+    IdeaResult:
+      type: object
+      required: [ideaId, content, distribution, selected]
+      properties:
+        ideaId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        authorNickname:
+          type: string
+          nullable: true
+          description: "`COMPLETED`에서 채택된 아이디어에만 값이 있고 나머지는 null입니다."
+        distribution:
+          $ref: '#/components/schemas/EvaluationDistribution'
+        selected:
+          type: boolean
+
+    EvaluationDistribution:
+      type: object
+      required: [positive, neutral, negative, total]
+      properties:
+        positive:
+          type: integer
+          minimum: 0
+          description: 좋음 개수
+        neutral:
+          type: integer
+          minimum: 0
+          description: 괜찮음 개수
+        negative:
+          type: integer
+          minimum: 0
+          description: 별로 개수
+        total:
+          type: integer
+          minimum: 0
+          description: 해당 아이디어에 저장된 전체 평가 개수
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: 요청을 처리할 수 없습니다.
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+  responses:
+    BadRequest:
+      description: 요청 형식 또는 입력값이 올바르지 않음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: 인증 정보가 없거나 유효하지 않음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: 인증되었지만 해당 행동을 수행할 권한이 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: 안건, 참가자 또는 아이디어를 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: 현재 안건 단계, 중복 또는 자원 상태 때문에 요청을 처리할 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
