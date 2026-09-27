@@ -220,8 +220,6 @@ paths:
         - `WRITING`: 제목, 설명, 작성 마감, 평가 마감 수정 가능
         - `EVALUATING`: 평가 마감만 수정 가능
         - 결과 단계: 수정 불가
-        요청에 포함되지 않은 필드는 기존 값을 유지한 뒤, 저장되는 최종 `writingEndsAt`과 `evaluationEndsAt`이
-        `writingEndsAt < evaluationEndsAt`을 만족하는지 검증합니다. 조건을 만족하지 않으면 `400 Bad Request`를 반환합니다.
       operationId: updateSession
       security:
         - bearerAuth: []

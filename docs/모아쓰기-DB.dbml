@@ -16,16 +16,12 @@ Enum SessionStatus {
 
 Table users {
   id uuid [pk, note: '내부 사용자 식별자']
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
   username varchar(100) [not null, unique, note: '로그인에 사용하는 아이디']
   password_hash varchar(255) [not null, note: '암호화된 비밀번호']
 }
 
 Table sessions {
   id uuid [pk, note: '세션 식별자이자 공유 링크 식별자']
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
   host_user_id uuid [not null, note: '세션을 생성하고 제어하는 진행자']
   title varchar(200) [not null]
   description text
@@ -44,8 +40,6 @@ Table sessions {
 
 Table participants {
   id uuid [pk, note: '세션 참가자 식별자']
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
   session_id uuid [not null]
   user_id uuid [note: '로그인 참가자는 사용자 ID, 비로그인 참가자는 NULL']
   nickname varchar(30) [not null, note: '앞뒤 공백 제거 후 표시하는 닉네임']
@@ -66,8 +60,6 @@ Table participants {
 
 Table ideas {
   id uuid [pk]
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
   participant_id uuid [not null, note: '아이디어를 작성한 참가자']
   content text [not null]
 
@@ -85,8 +77,6 @@ Table ideas {
 
 Table evaluations {
   id uuid [pk]
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
   participant_id uuid [not null]
   idea_id uuid [not null]
   value smallint [not null]
