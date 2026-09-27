@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>아이디어 작성 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active app-screen" data-screen="write">
+      <div class="stepper"><b class="active"><i>1</i>작성</b><span></span><b><i>2</i>평가</b><span></span><b><i>3</i>결과</b></div>
+      <div class="work-head"><div><span class="eyebrow">신규 서비스 아이디어</span><h2>나의 아이디어</h2><p class="muted">작성 중에는 다른 참가자의 아이디어가 보이지 않아요.</p></div><div class="countdown"><small>남은 시간</small><b>08:42</b><span>14:30 마감</span></div></div>
+      <div class="editor-list"><article class="idea-editor"><div class="editor-head"><b>아이디어 1</b><span class="save-state saved">✓ 저장됨</span></div><div class="fake-input textarea tall">출퇴근 길에 잠깐 들러 식재료 키트를 찾아갈 수 있는 동네 무인 냉장고 서비스</div><div class="editor-actions"><span>49 / 1,000</span><button class="btn ghost small" data-toast="삭제 확인이 필요한 데모 상태예요.">삭제</button><button class="btn primary small" data-toast="아이디어 1을 저장했어요.">저장</button></div></article><article class="idea-editor"><div class="editor-head"><b>아이디어 2</b><span class="save-state unsaved">● 미저장</span></div><div class="fake-input textarea tall ghost-text">회의 전에 참석자의 집중 시간을 받아 안건별 적정 회의 길이를 제안하는 서비스</div><div class="editor-actions"><span>52 / 1,000</span><button class="btn ghost small">삭제</button><button class="btn primary small" data-toast="아이디어 2를 저장했어요.">저장</button></div></article><button class="add-idea" data-toast="빈 아이디어 카드를 추가할 수 있는 자리예요.">+  아이디어 추가 <span>2 / 3</span></button></div>
+      <div class="preview-next"><span>데모에서는 마감 후 화면을 바로 확인할 수 있어요.</span><button class="btn secondary" data-go="evaluate">평가 단계 미리보기 →</button></div>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4
+ * Hallmark · genre: modern-minimal · macrostructure: Ecosystem Index
+ * design-system: design.md · designed-as-app · source: SK Careers study
+ */
+:root {
+  --color-canvas: oklch(96.7% 0.003 260);
+  --color-paper: oklch(100% 0 0);
+  --color-paper-2: oklch(98.4% 0.002 260);
+  --color-paper-3: oklch(94.7% 0.004 260);
+  --color-ink: oklch(19% 0.008 260);
+  --color-ink-2: oklch(31% 0.008 260);
+  --color-muted: oklch(49% 0.008 260);
+  --color-rule: oklch(91% 0.004 260);
+  --color-rule-strong: oklch(82% 0.008 260);
+  --color-accent: oklch(58% 0.236 27);
+  --color-accent-deep: oklch(49% 0.20 27);
+  --color-accent-soft: oklch(95% 0.026 27);
+  --color-accent-ink: oklch(100% 0 0);
+  --color-brand-orange: oklch(70% 0.19 48);
+  --color-focus: oklch(49% 0.20 27);
+  --color-success: oklch(51% 0.14 151);
+  --color-success-soft: oklch(95% 0.035 151);
+  --color-warning: oklch(55% 0.14 70);
+  --color-warning-soft: oklch(96% 0.04 80);
+  --color-error: var(--color-accent-deep);
+  --color-error-soft: var(--color-accent-soft);
+  --color-info: oklch(48% 0.12 250);
+  --color-info-soft: oklch(95% 0.025 250);
+  --color-overlay: oklch(14% 0.01 260 / .64);
+  --font-display: "Pretendard", "Apple SD Gothic Neo", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Pretendard", "Apple SD Gothic Neo", ui-sans-serif, system-ui, sans-serif;
+  --font-label: var(--font-body);
+  --space-3xs: .25rem; --space-2xs: .5rem; --space-xs: .75rem;
+  --space-sm: 1rem; --space-md: 1.5rem; --space-lg: 2rem;
+  --space-xl: 3rem; --space-2xl: 4rem; --space-3xl: 6rem;
+  --text-xs: .75rem; --text-sm: .875rem; --text-md: 1rem;
+  --text-lg: 1.25rem; --text-xl: 1.75rem; --text-2xl: 2.25rem;
+  --text-display: clamp(2.5rem, 7vw, 5.75rem);
+  --radius-sm: .5rem; --radius-md: .75rem; --radius-lg: 1rem; --radius-pill: 999px;
+  --rule-thin: 1px;
+  --shadow-panel: 0 1px 2px oklch(19% 0.008 260 / .04), 0 16px 42px oklch(19% 0.008 260 / .05);
+  --shadow-float: 0 22px 60px oklch(19% 0.008 260 / .16);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-in: cubic-bezier(.7, 0, .84, 0);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --dur-fast: 120ms; --dur-base: 180ms;
+}

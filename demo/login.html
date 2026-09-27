@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>로그인 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active auth-screen" data-screen="login">
+      <div class="auth-card">
+        <button class="text-link back" data-go="landing">← 홈으로</button>
+        <span class="eyebrow">진행자</span><h2>다시 만나서 반가워요.</h2>
+        <p class="muted">안건을 만들고 진행하려면 로그인해 주세요.</p>
+        <label>아이디<div class="fake-input">haemil</div></label>
+        <label>비밀번호<div class="fake-input">•••••••• <span>◉</span></div></label>
+        <button class="btn primary wide" data-go="landing">로그인</button>
+        <p class="auth-foot">처음 오셨나요? <button class="text-link" data-go="signup">회원가입</button></p>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>

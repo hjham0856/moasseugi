@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>세션 안내 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active app-screen narrow" data-screen="guide">
+      <div class="guide-card"><div class="guide-icon">✎</div><span class="eyebrow">참여 준비 완료</span><h2>먼저, 이것만 기억해 주세요.</h2><div class="guide-list"><div><i>1</i><p><b>아이디어는 최대 3개</b><br>하나씩 자유롭게 적어주세요.</p></div><div><i>2</i><p><b>마감 전에는 수정과 삭제 가능</b><br>각 아이디어의 저장 버튼을 눌러야 반영돼요.</p></div><div><i>3</i><p><b>작성 중에는 서로의 의견을 비공개</b><br>다른 사람에게 영향받지 않고 생각할 수 있어요.</p></div></div><div class="deadline simple"><div><span>작성 마감</span><b>2026. 09. 16 14:30</b></div></div><button class="btn primary wide" data-go="write">아이디어 작성하기 →</button></div>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>

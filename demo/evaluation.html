@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>아이디어 평가 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active app-screen" data-screen="evaluate">
+      <div class="stepper"><b><i>✓</i>작성</b><span class="done-line"></span><b class="active"><i>2</i>평가</b><span></span><b><i>3</i>결과</b></div>
+      <div class="work-head"><div><span class="eyebrow">신규 서비스 아이디어</span><h2>아이디어를 평가해 주세요.</h2><p class="muted">다른 사람의 선택은 보이지 않아요. 순위가 아닌 논의를 위한 판단입니다.</p></div><div class="countdown"><small>남은 시간</small><b>16:18</b><span>14:50 마감</span></div></div>
+      <div class="progress-row"><span><b>3</b> / 8 평가</span><div class="progress"><i style="width:37.5%"></i></div></div>
+      <article class="eval-card"><div class="eval-index">IDEA 04 <span>작성자 비공개</span></div><blockquote>“가게별 혼잡도를 실시간으로 보여주고, 한적한 시간에 방문하면 지역 화폐 혜택을 주는 동네 상점 탐색 서비스”</blockquote><p>이 아이디어가 안건에 얼마나 잘 맞는지 판단해 주세요.</p><div class="rating-options"><button class="good" data-rating="좋음"><i>↑</i><b>좋음</b><small>적극적으로 논의해 보고 싶어요</small></button><button data-rating="괜찮음"><i>—</i><b>괜찮음</b><small>가능성을 더 살펴볼 수 있어요</small></button><button data-rating="별로"><i>↓</i><b>별로</b><small>이번 안건과는 잘 맞지 않아요</small></button></div><div class="eval-save"><span id="ratingState">하나를 선택한 뒤 저장해 주세요.</span><button class="btn primary" data-toast="이 평가를 저장했어요.">이 평가 저장</button></div></article>
+      <div class="card-nav"><button class="btn ghost">← 이전</button><span>4 / 8</span><button class="btn secondary" data-go="result">결과 단계 미리보기 →</button></div>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>

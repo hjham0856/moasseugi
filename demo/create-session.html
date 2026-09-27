@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>새 안건 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active app-screen narrow" data-screen="create">
+      <button class="text-link back" data-go="landing">← 홈으로</button>
+      <div class="page-head"><div><span class="eyebrow">새로운 세션</span><h2>새 안건 만들기</h2><p class="muted">참가자가 집중할 수 있도록 하나의 주제를 명확하게 적어주세요.</p></div></div>
+      <section class="form-card" aria-label="안건 설정">
+        <label>안건 제목 <small>필수</small><div class="fake-input">신규 서비스 아이디어</div><span class="counter">16 / 200</span></label>
+        <label>설명 <small>선택</small><div class="fake-input textarea">고객의 일상 불편을 줄일 수 있는 서비스를 자유롭게 적어주세요.</div></label>
+        <div class="two-col"><label>작성 마감<div class="fake-input">2026. 09. 16   14:30</div></label><label>평가 마감<div class="fake-input">2026. 09. 16   14:50</div></label></div>
+        <div class="info-box">◈ <div><b>작성과 평가는 독립적으로 진행돼요.</b><p>작성 중에는 다른 사람의 아이디어가 보이지 않고, 결과는 순위 없이 판단 분포로만 공개됩니다.</p></div></div>
+        <div class="form-actions"><button class="btn ghost" data-go="landing">취소</button><button class="btn primary" data-go="lobby">안건 만들기</button></div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>

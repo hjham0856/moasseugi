@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>최종 결과 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active app-screen" data-screen="final">
+      <div class="stepper"><b><i>✓</i>작성</b><span class="done-line"></span><b><i>✓</i>평가</b><span class="done-line"></span><b class="active"><i>✓</i>결과</b></div>
+      <div class="final-hero"><div class="confetti">✦</div><span class="badge done">완료</span><h1>최종 아이디어가 선정되었어요.</h1><p>함께 의견을 나누고 더 나은 방향을 만들어 주셔서 고맙습니다.</p></div>
+      <article class="winner"><div class="winner-label">✦ 최종 채택</div><blockquote>“가게별 혼잡도를 실시간으로 보여주고, 한적한 시간에 방문하면 지역 화폐 혜택을 주는 동네 상점 탐색 서비스”</blockquote><div class="author"><span class="avatar mint">DA</span><div><small>작성자</small><b>이다온</b></div></div><div class="distribution" data-values="5,2,1"></div></article>
+      <h3 class="other-title">함께 논의한 다른 아이디어</h3><div class="result-list compact-results" id="finalOthers"></div>
+      <div class="bottom-actions"><button class="btn secondary" data-toast="결과 링크를 복사했어요.">결과 링크 복사</button><button class="btn primary host-only" data-go="landing">홈으로 돌아가기</button><button class="btn primary guest-only" data-go="landing">확인</button></div>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>

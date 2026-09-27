@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>평가 결과 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active app-screen" data-screen="result">
+      <div class="stepper"><b><i>✓</i>작성</b><span class="done-line"></span><b><i>✓</i>평가</b><span class="done-line"></span><b class="active"><i>3</i>결과</b></div>
+      <div class="result-head"><div><span class="badge pending">최종 채택 전</span><h2>서로의 판단을 함께 살펴보세요.</h2><p>아래 분포는 순위가 아닌 논의를 위한 참고 자료입니다. 각 아이디어의 가능성과 보완점을 이야기해 보세요.</p></div><button class="btn primary host-only" data-go="select">최종 아이디어 선택하기</button></div>
+      <button class="text-link host-only result-back" data-go="landing">← 홈으로 돌아가기</button>
+      <div class="notice guest-only">진행자가 논의 후 최종 아이디어를 선택하면 이 화면에 표시됩니다.</div>
+      <div class="result-list" id="resultList"></div>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>최종 채택 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active app-screen" data-screen="select">
+      <div class="stepper"><b><i>✓</i>작성</b><span class="done-line"></span><b><i>✓</i>평가</b><span class="done-line"></span><b class="active"><i>3</i>결과</b></div>
+      <div class="warning">⚠ <div><b>최종 채택은 변경할 수 없습니다.</b><p>오프라인 논의가 끝난 후 선택해 주세요. 평가 분포와 관계없이 어떤 아이디어든 선택할 수 있어요.</p></div></div>
+      <div class="result-head"><div><span class="eyebrow">진행자 전용</span><h2>최종으로 채택할 아이디어를 골라주세요.</h2></div></div>
+      <div class="result-list selectable" id="selectList"></div>
+      <div class="selection-bar"><div><small>선택한 아이디어</small><b id="selectionSummary">아직 선택하지 않았어요.</b></div><button class="btn ghost" data-go="result">취소</button><button class="btn primary" id="confirmSelection" disabled data-modal="confirm-selection">최종 채택</button></div>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>

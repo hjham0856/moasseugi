@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>홈 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active landing" data-screen="landing">
+      <div class="hero-copy">
+        <span class="eyebrow">함께 결정하는 새로운 방식</span>
+        <h1>먼저 각자 쓰고,<br><em>함께 판단해요.</em></h1>
+        <p>회의에서는 먼저 나온 의견이나 목소리 큰 사람의 생각에 논의가 쏠리기 쉽습니다. 모아쓰기는 각자의 아이디어와 판단을 먼저 모아, 서로의 생각을 충분히 살핀 뒤 함께 결정하도록 돕습니다.</p>
+        <div class="hero-actions">
+          <button class="btn primary" data-go="create">새 안건 만들기 <span>→</span></button>
+          <button class="btn secondary" data-role="guest">참가자 데모 보기</button>
+        </div>
+      </div>
+      <section class="hero-visual home-sessions" aria-label="내 안건">
+        <div class="home-sessions-head"><div><span>내 안건</span><h2>이어서 살펴보기</h2></div><small>만든 안건 · 참여한 안건</small></div>
+        <div class="home-session-list">
+          <button class="home-session" data-go="lobby"><span class="home-session-copy"><small>진행 · 작성 중</small><b>신규 서비스 아이디어</b><span>작성 마감 14:30</span></span><span aria-hidden="true">→</span></button>
+          <button class="home-session" data-go="result"><span class="home-session-copy"><small>진행 · 채택 대기</small><b>월간 타운홀 주제</b><span>평가 종료</span></span><span aria-hidden="true">→</span></button>
+          <button class="home-session" data-go="final"><span class="home-session-copy"><small>참여 · 완료</small><b>신규 입사자 온보딩 개선</b><span>최종 채택 완료</span></span><span aria-hidden="true">→</span></button>
+        </div>
+      </section>
+      <section class="principles" aria-label="모아쓰기 원칙">
+        <header><span>우리가 지키는 방식</span><h2>누가 말했는지보다<br>무슨 생각인지 먼저.</h2></header>
+        <div class="principle-list"><article><b>각자 먼저 작성</b><p>다른 사람의 아이디어를 보기 전에 자기 생각을 적어, 처음 나온 의견에 끌려가지 않도록 해요.</p></article><article><b>독립적으로 평가</b><p>다른 사람의 선택을 모른 채 판단하고, 모두 마친 뒤 좋음·괜찮음·별로의 분포를 확인해요.</p></article><article><b>함께 논의하고 채택</b><p>분포는 정답이나 순위가 아닙니다. 서로 다른 판단의 이유를 이야기한 뒤 하나를 채택해요.</p></article></div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>

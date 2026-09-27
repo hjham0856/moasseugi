@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>참가 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active app-screen narrow" data-screen="join">
+      <div class="join-card"><span class="badge writing">작성 중</span><h1>신규 서비스 아이디어</h1><p>고객의 일상 불편을 줄일 수 있는 서비스를 자유롭게 적어주세요.</p><div class="host-line"><span class="avatar">MO</span><div><small>진행자</small><b>김모아</b></div><div class="join-time"><small>작성 마감까지</small><b>08:42</b></div></div><label>이 안건에서 사용할 닉네임<div class="fake-input">minji</div><span class="field-help">세션 안에서 중복되지 않는 1~30자</span></label><button class="btn primary wide" data-go="guide">참여하기 →</button><div class="divider"><span>또는</span></div><button class="btn secondary wide" data-toast="로그인 화면은 진행자 데모에서 확인할 수 있어요.">계정으로 로그인</button><p class="hint">로그인하면 다른 기기에서도 참여 기록을 확인할 수 있어요.</p></div>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>

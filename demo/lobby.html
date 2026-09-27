@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>공유 대기실 · 모아쓰기 데모</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="demo-bar">
+    <div><b>DEMO</b><span>고정된 예시 데이터로 화면 흐름만 보여줍니다.</span></div>
+    <div class="demo-switch" aria-label="데모 흐름 선택">
+      <button class="active" data-role="host">진행자 흐름</button>
+      <button data-role="guest">참가자 흐름</button>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <button class="brand" data-go="landing" aria-label="홈으로">
+      <span>모아쓰기</span>
+    </button>
+    <div class="header-topic" id="headerTopic" hidden>신규 서비스 아이디어</div>
+    <div class="account" id="account">진행자 김모아 <span>▾</span></div>
+  </header>
+
+  <main>
+    <section class="screen active app-screen" data-screen="lobby">
+      <div class="stepper"><b class="active"><i>1</i>작성</b><span></span><b><i>2</i>평가</b><span></span><b><i>3</i>결과</b></div>
+      <div class="topic-head"><div><span class="badge writing">작성 중</span><h2>신규 서비스 아이디어</h2><p>고객의 일상 불편을 줄일 수 있는 서비스를 자유롭게 적어주세요.</p></div><button class="btn ghost" data-go="landing">홈으로</button></div>
+      <div class="lobby-grid">
+        <article class="panel share-panel"><span class="eyebrow">공유하기</span><h3>함께할 사람을 초대하세요.</h3><img class="qr" src="./데모 QR 코드.jpg" alt="참가 페이지로 연결되는 QR 코드"><div class="link-box"><span>moasugi.kr/s/8K4M2</span><button data-toast="링크를 복사했어요.">복사</button></div><p class="hint">공유 링크로 입장한 참가자는 닉네임을 정한 뒤 작성할 수 있어요.</p></article>
+        <article class="panel"><div class="panel-head"><div><span class="eyebrow">참가자</span><h3>현재 5명 참여</h3></div><span class="live-dot">● 입장 대기 중</span></div><ul class="people"><li><span class="avatar">MO</span><b>김모아</b><em>진행자</em></li><li><span class="avatar peach">HI</span><b>정하늘</b></li><li><span class="avatar mint">DA</span><b>이다온</b></li><li><span class="avatar blue">SO</span><b>박소율</b></li><li><span class="avatar lilac">YU</span><b>최유진</b></li></ul></article>
+      </div>
+      <div class="deadline"><div><span>작성 마감</span><b>2026. 09. 16 14:30</b></div><div><span>평가 마감</span><b>2026. 09. 16 14:50</b></div><button class="text-link" data-toast="시간 변경은 데모에서 저장되지 않아요.">시간 변경</button></div>
+      <div class="bottom-actions"><button class="btn secondary" data-go="write">나도 아이디어 작성하기</button><button class="btn primary" data-go="manage-writing">작성 관리하기 →</button></div>
+    </section>
+  </main>
+
+  <div class="modal-wrap" id="modalWrap" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal" role="dialog" aria-modal="true"><div class="modal-icon">⚠</div><h3 id="modalTitle"></h3><p id="modalBody"></p><div class="modal-actions"><button class="btn ghost" data-close-modal>다시 검토</button><button class="btn danger" id="modalConfirm">확인</button></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js?v=5"></script>
+</body>
+</html>
