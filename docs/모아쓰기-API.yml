@@ -9,19 +9,29 @@ info:
     ## 인증
     - 회원은 로그인 시 발급된 JWT Access Token을 `Authorization: Bearer {token}` 형식으로 보냅니다.
     - 비회원 참가자는 참가 시 발급된 세션별 재접속 토큰을 `X-Participant-Token` 헤더로 보냅니다.
+    - 비회원 참가 토큰은 발급 후 24시간에 만료됩니다. 분실·만료 뒤에는 기존 참가 기록으로 재접속할 수 없으며, 작성 단계라면 새 닉네임으로 신규 참가할 수 있습니다.
+    - 인증을 사용하는 API에 두 헤더를 함께 보내면 JWT만 사용하고 참가 토큰은 무시합니다. JWT가 유효하지 않으면 참가 토큰으로 대체하지 않고 401을 반환합니다.
     - 로그인은 선택이지만, 안건을 생성·수정·조기 종료·최종 채택하려면 회원 인증이 필요합니다.
 
     ## 단계 전환
     - 안건 상태는 `WRITING → EVALUATING → RESULT_PENDING_SELECTION → COMPLETED`로 전환됩니다.
-    - 작성 단계에서 아이디어가 0개인 채 종료되면 `NO_IDEAS`가 됩니다.
+    - 작성 단계에서 아이디어가 0개인 채 종료되면 `NO_IDEAS`가 되며, 결과 조회는 빈 아이디어 목록을 반환합니다.
     - 작성·평가 단계는 마감시각 도달 또는 진행자의 조기 종료로 전환됩니다.
     - 참가자 전원이 작성이나 평가를 마쳤다는 이유로는 자동 종료하지 않습니다.
+    - 세션별 요청에서 현재 상태를 사용하기 전에 서버 시각이 마감시각 이상이면 만료된 단계를 먼저 전환합니다. 조회와 저장 요청 모두 동일한 전환 로직을 사용하며, 스케줄러도 이 로직을 호출합니다.
+    - 스케줄러 실행이 늦어 두 마감시각이 모두 지났다면 `WRITING`에서 아이디어 수에 따라 전환한 뒤, `EVALUATING`이 된 경우 평가 단계도 이어서 종료합니다. `NO_IDEAS`는 종료 상태입니다.
+    - 마감 뒤 도착한 참가·저장·수정 요청은 전환된 단계에 따라 거부합니다. `PATCH`로 지난 마감시각을 연장할 수 없습니다.
 
     ## 공개 범위
     - 작성 중에는 다른 참가자의 아이디어를 공개하지 않습니다.
     - 평가 중에는 다른 참가자의 평가와 중간 집계를 공개하지 않습니다.
     - 결과는 점수와 순위 없이 `좋음 / 괜찮음 / 별로` 분포로만 공개합니다.
     - 최종 채택 후에도 채택된 아이디어의 작성자 닉네임만 공개합니다.
+
+    ## 에러 응답
+    - 실패 응답은 `Error{code, message, fieldErrors}` 형식이며, `code`는 HTTP 상태와 별도의 `SCREAMING_SNAKE` 도메인 식별자다. 하나의 HTTP 상태에 여러 `code`가 대응할 수 있다.
+    - `message`는 한글 한 줄이며, `fieldErrors`는 400 입력값 오류에만 사용한다.
+    - 엔드포인트별로 반환 가능한 `code`는 각 응답의 `description`에 명시한다. FE 화면 분기는 `docs/모아쓰기-프론트설계.md`의 오류 처리를 따른다.
 
 servers:
   - url: http://localhost:8080/api
@@ -68,7 +78,11 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: 이미 사용 중인 아이디 (code: USERNAME_TAKEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /auth/login:
     post:
@@ -91,8 +105,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: 아이디·비밀번호 불일치 (code: INVALID_CREDENTIALS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /users/me:
     get:
@@ -139,7 +159,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: 과거시각 지정 또는 작성마감이 평가마감보다 빠르지 않음 (code: INVALID_TIME_RANGE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -172,6 +196,7 @@ paths:
       description: |
         현재 로그인한 계정으로 참가한 안건을 조회합니다.
         비회원으로 참가한 기록은 계정과 연결되지 않으므로 이 목록에 포함되지 않습니다.
+        진행자는 세션 생성 시 참가자이기도 하므로 자신이 만든 안건이 이 목록에도 포함될 수 있습니다.
       operationId: getParticipatedSessions
       security:
         - bearerAuth: []
@@ -195,8 +220,8 @@ paths:
       summary: 안건 상세 및 현재 단계 조회
       description: |
         공유 링크 진입, 새로고침, 마감 후 화면 전환 시 안건의 현재 정보를 조회합니다.
-        응답에는 서버 현재 시각, 안건 상태, 마감시각, 참가자 수와 현재 요청자의 진행자·참가 여부가 포함됩니다.
-        로그인 토큰 또는 재접속 토큰은 선택적으로 보낼 수 있습니다.
+        마감시각이 지났다면 상태를 먼저 전환합니다. 응답에는 서버 현재 시각, 안건 상태, 마감시각, 참가자 수와 현재 요청자의 진행자·참가 여부가 포함됩니다.
+        로그인 토큰 또는 재접속 토큰은 선택적으로 보낼 수 있습니다. 둘 다 있으면 JWT만 사용합니다.
       operationId: getSession
       security:
         - bearerAuth: []
@@ -209,6 +234,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
+        '401':
+          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
@@ -237,15 +268,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: 과거시각 지정 또는 시간 역전 (code: INVALID_TIME_RANGE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: 진행자가 아님 (code: NOT_HOST)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: 단계 허용 외 필드 수정 또는 결과 단계 수정 (code: INVALID_PHASE_ACTION)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /sessions/{sessionId}/participants:
     parameters:
@@ -254,15 +297,17 @@ paths:
       tags: [Participant]
       summary: 안건 참가
       description: |
-        공유 링크로 접속한 사용자가 세션 내 닉네임을 정하고 안건에 참가합니다.
+        회원과 비회원 모두 공유 링크에서 닉네임을 정해 참가합니다. 로그인 회원의 입력창에는 JWT로 식별한 자신의 username을 초깃값으로 표시하며, 다른 닉네임으로 수정할 수 있습니다.
+        닉네임은 해당 세션의 기존 참가자 닉네임과 대소문자 구분 없이 중복될 수 없습니다. 다른 세션의 닉네임이나 회원 username은 중복 검사 대상이 아닙니다.
         신규 참가는 `WRITING` 단계에서만 가능합니다.
-        회원 토큰은 선택적이며, 비회원으로 참가하면 응답에 재접속 토큰이 포함됩니다.
+        회원 토큰은 선택적이며, 비회원으로 참가하면 응답에 24시간 유효한 재접속 토큰이 포함됩니다.
       operationId: joinSession
       security:
         - bearerAuth: []
         - {}
       requestBody:
         required: true
+        description: 회원과 비회원 모두 선택한 닉네임을 보냅니다. 회원 화면은 자신의 username을 초깃값으로 표시합니다.
         content:
           application/json:
             schema:
@@ -275,11 +320,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/JoinSessionResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: 닉네임 누락·문자 규칙 위반 (code: INVALID_NICKNAME)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 닉네임 중복, 이미 참가한 회원 또는 참가 가능 단계 종료
+          description: 세션 내 닉네임 중복, 이미 참가한 회원 또는 참가 가능 단계 종료 (code: NICKNAME_TAKEN·ALREADY_JOINED·JOIN_CLOSED)
           content:
             application/json:
               schema:
@@ -340,11 +391,25 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: 남의 아이디어 id로 수정 (code: NOT_IDEA_OWNER)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: 작성 단계가 아니거나 4번째 저장 시도 (code: INVALID_PHASE_ACTION·IDEA_LIMIT_EXCEEDED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /sessions/{sessionId}/ideas/me:
     get:
@@ -371,7 +436,11 @@ paths:
                 items:
                   $ref: '#/components/schemas/Idea'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -395,13 +464,25 @@ paths:
         '204':
           description: 삭제 성공
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: 남의 아이디어 삭제 (code: NOT_IDEA_OWNER)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: 작성 단계가 아님 (code: INVALID_PHASE_ACTION)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /sessions/{sessionId}/close-writing:
     post:
@@ -426,11 +507,19 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: 진행자가 아님 (code: NOT_HOST)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: 작성 단계가 아님 (code: INVALID_PHASE_ACTION)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /sessions/{sessionId}/evaluation-items:
     get:
@@ -440,6 +529,7 @@ paths:
         현재 참가자가 평가해야 할 다른 참가자의 아이디어를 조회합니다.
         본인 아이디어는 제외하고 작성자 닉네임, 다른 참가자의 평가, 중간 집계는 반환하지 않습니다.
         재접속 시 평가를 복원할 수 있도록 각 아이디어에 대한 나의 기존 평가는 함께 반환합니다.
+        아이디어 생성순으로 반환합니다.
       operationId: getEvaluationItems
       parameters:
         - $ref: '#/components/parameters/SessionId'
@@ -456,13 +546,21 @@ paths:
                 items:
                   $ref: '#/components/schemas/EvaluationItem'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: 평가 단계가 아님 (code: INVALID_PHASE_ACTION)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /sessions/{sessionId}/evaluations:
     put:
@@ -495,13 +593,25 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: 본인 아이디어 평가 (code: SELF_EVALUATION)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: 평가 단계가 아님 (code: INVALID_PHASE_ACTION)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /sessions/{sessionId}/close-evaluation:
     post:
@@ -526,11 +636,19 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: 진행자가 아님 (code: NOT_HOST)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: 평가 단계가 아님 (code: INVALID_PHASE_ACTION)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /sessions/{sessionId}/results:
     get:
@@ -539,7 +657,9 @@ paths:
       description: |
         평가가 종료된 안건의 아이디어별 `좋음 / 괜찮음 / 별로` 분포를 조회합니다.
         공유 링크를 알고 있다면 로그인 없이 조회할 수 있습니다.
+        아이디어는 생성순으로 반환합니다.
         `RESULT_PENDING_SELECTION`에서는 모든 작성자를 숨기고, `COMPLETED`에서는 채택된 아이디어의 작성자 닉네임만 공개합니다.
+        `NO_IDEAS`에서는 ideas가 빈 배열이며 결과 화면은 아이디어 없음 뷰를 표시합니다.
       operationId: getResults
       parameters:
         - $ref: '#/components/parameters/SessionId'
@@ -554,7 +674,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 아직 결과를 공개할 단계가 아님
+          description: 아직 결과를 공개할 단계가 아님 (code: RESULT_NOT_READY)
           content:
             application/json:
               schema:
@@ -591,11 +711,19 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: 진행자가 아님 (code: NOT_HOST)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: 채택 대기 단계가 아님 (code: INVALID_PHASE_ACTION)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   securitySchemes:
@@ -646,7 +774,9 @@ components:
         username:
           type: string
           minLength: 1
-          maxLength: 100
+          maxLength: 30
+          pattern: '^[A-Za-z0-9가-힣]+$'
+          description: 앞뒤 공백을 제거한 후 한글 완성형 음절·영문·숫자만 허용합니다. 진행자 닉네임으로 그대로 사용합니다.
           example: haemil
         password:
           type: string
@@ -659,6 +789,7 @@ components:
       properties:
         username:
           type: string
+          maxLength: 30
           example: haemil
         password:
           type: string
@@ -686,6 +817,7 @@ components:
           format: uuid
         username:
           type: string
+          maxLength: 30
           example: haemil
         createdAt:
           type: string
@@ -760,7 +892,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/SessionSummary'
         - type: object
-          required: [serverTime, viewer]
+          required: [serverTime, selectedIdeaId, viewer]
           properties:
             serverTime:
               type: string
@@ -775,8 +907,8 @@ components:
 
     SessionViewer:
       type: object
-      description: 현재 요청자와 안건의 관계. 인증 정보가 없으면 모두 false/null입니다.
-      required: [isHost, isParticipant]
+      description: 현재 요청자와 안건의 관계. 인증 정보가 없으면 모두 false/null이며, 진행자는 항상 isParticipant도 true입니다.
+      required: [isHost, isParticipant, participantId, nickname]
       properties:
         isHost:
           type: boolean
@@ -792,13 +924,15 @@ components:
 
     JoinSessionRequest:
       type: object
+      description: 회원과 비회원의 참가 요청 본문. 회원 화면에서는 username으로 미리 채운 값을 수정할 수 있습니다.
       required: [nickname]
       properties:
         nickname:
           type: string
           minLength: 1
           maxLength: 30
-          description: 앞뒤 공백을 제거한 후 세션 내에서 중복되지 않아야 합니다.
+          pattern: '^[A-Za-z0-9가-힣]+$'
+          description: 앞뒤 공백을 제거한 후 한글 완성형 음절·영문·숫자만 허용합니다. 해당 세션의 참가자 닉네임과 대소문자 구분 없이 중복되지 않아야 합니다.
           example: 해밀
 
     JoinSessionResponse:
@@ -810,7 +944,7 @@ components:
         reconnectToken:
           type: string
           nullable: true
-          description: 비회원 참가 시에만 발급되는 세션별 재접속 토큰
+          description: 비회원 참가 시에만 발급되는 세션별 재접속 토큰. 발급 후 24시간 동안 유효합니다.
 
     ParticipantSummary:
       type: object
@@ -857,7 +991,7 @@ components:
 
     EvaluationItem:
       type: object
-      required: [ideaId, content]
+      required: [ideaId, content, myEvaluation]
       properties:
         ideaId:
           type: string
@@ -867,7 +1001,7 @@ components:
         myEvaluation:
           type: integer
           nullable: true
-          enum: [-1, 0, 1]
+          enum: [-1, 0, 1, null]
           description: 현재 참가자의 기존 평가. 아직 평가하지 않았으면 null입니다.
 
     EvaluationWriteRequest:
@@ -908,6 +1042,7 @@ components:
 
     ResultResponse:
       type: object
+      description: NO_IDEAS 상태에서는 ideas가 빈 배열이며 채택할 아이디어가 없습니다.
       required: [sessionId, status, ideas]
       properties:
         sessionId:
@@ -915,7 +1050,7 @@ components:
           format: uuid
         status:
           type: string
-          enum: [RESULT_PENDING_SELECTION, COMPLETED]
+          enum: [RESULT_PENDING_SELECTION, COMPLETED, NO_IDEAS]
         ideas:
           type: array
           items:
@@ -923,7 +1058,7 @@ components:
 
     IdeaResult:
       type: object
-      required: [ideaId, content, distribution, selected]
+      required: [ideaId, content, authorNickname, distribution, selected]
       properties:
         ideaId:
           type: string
@@ -966,6 +1101,30 @@ components:
       properties:
         code:
           type: string
+          description: |
+            HTTP 상태와 별도의 SCREAMING_SNAKE 도메인 식별자. 하나의 HTTP 상태에 여러 code가 대응할 수 있다.
+            message는 한글 한 줄이며, fieldErrors는 400 입력값 오류에만 사용한다.
+            엔드포인트별로 반환 가능한 code는 각 응답의 description에 명시한다.
+          enum:
+            - INVALID_REQUEST
+            - UNAUTHORIZED
+            - FORBIDDEN
+            - NOT_FOUND
+            - CONFLICT
+            - USERNAME_TAKEN
+            - INVALID_CREDENTIALS
+            - INVALID_TIME_RANGE
+            - INVALID_PHASE_ACTION
+            - NOT_HOST
+            - JOIN_CLOSED
+            - NICKNAME_TAKEN
+            - ALREADY_JOINED
+            - INVALID_NICKNAME
+            - TOKEN_EXPIRED
+            - IDEA_LIMIT_EXCEEDED
+            - NOT_IDEA_OWNER
+            - SELF_EVALUATION
+            - RESULT_NOT_READY
           example: INVALID_REQUEST
         message:
           type: string
@@ -983,31 +1142,31 @@ components:
 
   responses:
     BadRequest:
-      description: 요청 형식 또는 입력값이 올바르지 않음
+      description: 요청 형식 또는 입력값이 올바르지 않음 (code: INVALID_REQUEST, 입력값 오류에는 fieldErrors 포함)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     Unauthorized:
-      description: 인증 정보가 없거나 유효하지 않음
+      description: 인증 정보가 없거나 유효하지 않음 (code: UNAUTHORIZED. 비회원 재접속 토큰 만료는 엔드포인트별 TOKEN_EXPIRED 참조)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     Forbidden:
-      description: 인증되었지만 해당 행동을 수행할 권한이 없음
+      description: 인증되었지만 해당 행동을 수행할 권한이 없음 (code: FORBIDDEN, 엔드포인트별 NOT_HOST·NOT_IDEA_OWNER·SELF_EVALUATION 참조)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     NotFound:
-      description: 안건, 참가자 또는 아이디어를 찾을 수 없음
+      description: 안건, 참가자 또는 아이디어를 찾을 수 없음 (code: NOT_FOUND)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     Conflict:
-      description: 현재 안건 단계, 중복 또는 자원 상태 때문에 요청을 처리할 수 없음
+      description: 현재 안건 단계, 중복 또는 자원 상태 때문에 요청을 처리할 수 없음 (code: 엔드포인트별 도메인 코드 — INVALID_PHASE_ACTION 등)
       content:
         application/json:
           schema:

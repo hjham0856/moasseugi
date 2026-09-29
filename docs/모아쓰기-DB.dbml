@@ -1,5 +1,7 @@
 // 브레인라이팅 웹 서비스 데이터 모델
 // DBML 기준 DB: PostgreSQL
+// PK 기본값은 gen_random_uuid(), 시각 기본값은 now()를 사용한다.
+// 현행 로컬 개발·백엔드 통합 테스트는 H2를 사용한다. PostgreSQL 전환 시 마이그레이션 방식(Flyway/Liquibase)과 PG 대상 검증을 확정해야 한다.
 
 Project brainwriting {
   database_type: 'PostgreSQL'
@@ -15,13 +17,15 @@ Enum SessionStatus {
 }
 
 Table users {
-  id uuid [pk, note: '내부 사용자 식별자']
-  username varchar(100) [not null, unique, note: '로그인에 사용하는 아이디']
-  password_hash varchar(255) [not null, note: '암호화된 비밀번호']
+  id uuid [pk, default: `gen_random_uuid()`, note: '내부 사용자 식별자']
+  username varchar(30) [not null, unique, note: '로그인에 사용하는 아이디. 앞뒤 공백 제거 후 한글·영문·숫자만 허용, 1~30자. 진행자 닉네임으로 그대로 사용']
+  password_hash varchar(255) [not null, note: 'BCrypt 암호화된 비밀번호']
+  created_at timestamptz [not null, default: `now()`, note: 'API User.createdAt 대응']
+  updated_at timestamptz [not null, default: `now()`]
 }
 
 Table sessions {
-  id uuid [pk, note: '세션 식별자이자 공유 링크 식별자']
+  id uuid [pk, default: `gen_random_uuid()`, note: '세션 식별자이자 공유 링크 식별자(UUID 그대로 노출)']
   host_user_id uuid [not null, note: '세션을 생성하고 제어하는 진행자']
   title varchar(200) [not null]
   description text
@@ -29,61 +33,83 @@ Table sessions {
   writing_ends_at timestamptz [not null]
   evaluation_ends_at timestamptz [not null]
   selected_idea_id uuid [note: '최종 채택된 아이디어. 채택 전에는 NULL이며 설정 후 변경할 수 없음']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    host_user_id [name: 'idx_sessions_host']
+  }
 
   Note: '''
-  writing_ends_at은 evaluation_ends_at보다 빨라야 한다.
+  writing_ends_at은 evaluation_ends_at보다 빨라야 한다(역전 시 400).
   selected_idea_id는 반드시 이 세션에 속한 아이디어여야 한다.
   selected_idea_id가 설정되면 status는 COMPLETED여야 한다.
   NO_IDEAS 상태에서는 selected_idea_id가 NULL이어야 한다.
+  세션 생성 시 진행자의 participant 행을 1건 자동 생성하며, 닉네임은 username을 그대로 사용한다.
+  세션별 요청에서 현재 상태를 사용하기 전 서버 시각이 마감 이상이면 상태를 먼저 전환한다. 스케줄러도 같은 멱등 전환 로직을 호출한다.
+  작성 마감 시 아이디어 0개면 NO_IDEAS, 1개 이상이면 EVALUATING으로 전환한다. 두 마감 모두 지났다면 EVALUATING을 거쳐 RESULT_PENDING_SELECTION까지 전환한다.
   '''
 }
 
 Table participants {
-  id uuid [pk, note: '세션 참가자 식별자']
+  id uuid [pk, default: `gen_random_uuid()`, note: '세션 참가자 식별자']
   session_id uuid [not null]
   user_id uuid [note: '로그인 참가자는 사용자 ID, 비로그인 참가자는 NULL']
-  nickname varchar(30) [not null, note: '앞뒤 공백 제거 후 표시하는 닉네임']
-  reconnect_token varchar(255) [note: '비로그인 참가자의 동일 브라우저 재접속용 세션별 토큰']
+  nickname varchar(30) [not null, note: '앞뒤 공백 제거 후 표시하는 닉네임. 한글·영문·숫자만 허용, 1~30자, 세션 내 대소문자 구분 없이 중복 금지(앱 레벨 검증)']
+  reconnect_token varchar(255) [note: '비로그인 참가자의 동일 브라우저 재접속용 세션별 토큰(완전 랜덤 문자열)']
+  created_at timestamptz [not null, default: `now()`, note: '재접속 토큰 만료 기준시각. 만료 = created_at + 24시간']
+  updated_at timestamptz [not null, default: `now()`]
 
   indexes {
+    session_id [name: 'idx_participants_session']
     (session_id, user_id) [unique, note: '로그인 사용자의 동일 세션 중복 참가 방지. user_id가 NULL인 행은 제외하는 부분 UNIQUE로 구현']
-    (session_id, nickname) [unique, note: '세션 안에서 닉네임 중복 금지']
+    (session_id, nickname) [unique, note: '세션 안에서 닉네임 중복 금지. 대소문자 구분 없는 비교는 앱 레벨에서 수행']
     (session_id, reconnect_token) [unique, note: '세션 안에서 재접속 토큰 중복 금지. NULL인 행은 제외하는 부분 UNIQUE로 구현']
   }
 
   Note: '''
-  진행자도 공유 링크로 접속하여 닉네임을 입력해야 Participant가 된다.
+  진행자는 세션 생성 시 자동 생성된 Participant이며, isHost=true이면 항상 참가자 권한을 포함한다.
   로그인 참가자는 user_id를 사용해 재접속하며 reconnect_token은 NULL이다.
   비로그인 참가자는 user_id가 NULL이고 reconnect_token을 사용한다.
+  로그인·비로그인 신규 참가 모두 요청에서 nickname을 받는다. 로그인 화면에는 username을 초깃값으로 넣되 사용자가 수정할 수 있다. nickname은 해당 세션의 참가자와만 대소문자 구분 없이 중복 검사한다.
+  토큰 만료(발급 후 24h, 즉 participants.created_at + 24시간) 또는 분실 시 기존 참가 기록으로 재접속할 수 없다. WRITING 단계에서만 새 닉네임으로 신규 참가할 수 있고 기존 작성·평가 기록은 새 참가자에게 이전되지 않는다.
+  부분 UNIQUE는 PostgreSQL에서 아래처럼 구현한다:
+  CREATE UNIQUE INDEX uq_participants_session_user ON participants(session_id, user_id) WHERE user_id IS NOT NULL;
+  CREATE UNIQUE INDEX uq_participants_session_token ON participants(session_id, reconnect_token) WHERE reconnect_token IS NOT NULL;
   '''
 }
 
 Table ideas {
-  id uuid [pk]
+  id uuid [pk, default: `gen_random_uuid()`]
   participant_id uuid [not null, note: '아이디어를 작성한 참가자']
-  content text [not null]
+  content text [not null, note: '공백만으로 구성된 내용은 불가. 길이 상한 없음']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
 
   indexes {
     participant_id [name: 'idx_ideas_participant']
   }
 
   Note: '''
-  아이디어의 소속 세션은 participant_id를 통해 확인한다.
-  참가자별 최대 3개 제한은 생성 트랜잭션에서 검증한다.
-  사용자가 저장을 누르지 않아 브라우저에만 존재하는 입력은 저장하지 않는다.
+  아이디어의 소속 세션은 participant_id를 경유한 join으로 확인한다(session_id 비정규화 컬럼 없음).
+  참가자별 최대 3개 제한은 생성 트랜잭션에서 검증하며, 4번째 저장 시도는 409로 거부한다.
+  삭제 후 재작성할 수 있다.
+  WRITING 단계에서만 생성·수정·삭제할 수 있으며, 사용자가 저장을 누르지 않아 브라우저에만 존재하는 입력은 저장하지 않는다.
   저장 API는 ID가 없으면 새 행을 생성하고, ID가 있으면 해당 참가자 소유의 행을 수정한다.
   '''
 }
 
 Table evaluations {
-  id uuid [pk]
+  id uuid [pk, default: `gen_random_uuid()`]
   participant_id uuid [not null]
   idea_id uuid [not null]
-  value smallint [not null]
+  value smallint [not null, note: '-1, 0, 1만 허용']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
 
   indexes {
     (participant_id, idea_id) [unique, note: '참가자별 아이디어 평가 하나만 허용']
-    idea_id
+    idea_id [name: 'idx_evaluations_idea']
   }
 
   Note: '''
@@ -92,13 +118,20 @@ Table evaluations {
   참가자는 자신이 작성한 아이디어를 평가할 수 없다.
   저장 API는 participant_id와 idea_id 조합으로 Upsert하여 기존 평가가 있으면 value를 수정한다.
   사용자가 저장을 누르지 않은 평가 선택은 저장하지 않는다.
+  EVALUATING 단계에서만 저장·수정할 수 있다.
+  평가가 종료된 뒤 저장되지 않은 (참가자, 아이디어) 쌍은 행 자체가 없으며, 결과 total 계산에서 제외된다.
+  total = positive + neutral + negative (저장된 평가만 합산).
   '''
 }
 
-Ref: sessions.host_user_id > users.id
-Ref: participants.session_id > sessions.id
-Ref: participants.user_id > users.id
-Ref: ideas.participant_id > participants.id
-Ref: evaluations.participant_id > participants.id
-Ref: evaluations.idea_id > ideas.id
+// 진행자가 존재하는 한 회원 행 삭제 제한
+Ref: sessions.host_user_id > users.id [delete: restrict]
+// 세션 삭제 시 참가 기록 함께 삭제
+Ref: participants.session_id > sessions.id [delete: cascade]
+// 회원 탈퇴 시 참가 기록은 유지하고 연결만 해제
+Ref: participants.user_id > users.id [delete: set null]
+Ref: ideas.participant_id > participants.id [delete: cascade]
+Ref: evaluations.participant_id > participants.id [delete: cascade]
+Ref: evaluations.idea_id > ideas.id [delete: cascade]
+// 채택 후에는 아이디어 삭제가 앱 레벨에서 차단되므로 DB 액션 지정 없음
 Ref: sessions.selected_idea_id > ideas.id
