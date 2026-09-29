@@ -1,6 +1,6 @@
 # 모아쓰기 프론트 설계
 
-> 기준: `demo/` 화면 구조만 참고(스타일은 새로) + `docs/모아쓰기-API.yml`
+> 기준: `demo/` 화면 구조만 참고(스타일은 새로) + `docs/moasseugi-api.yml`
 > 스택: Vue 3.5 + TS + vue-router + pinia. HTTP는 `fetch` 래퍼(axios 미도입). QR은 `qrcode.vue` 추가 예정.
 > 상태: 검토 완료 (2026-09-29). 본 문서의 라우트·클라이언트·스토어·파일구조안은 확정으로 간주한다.
 > 개정 2026-09-29: lobby·manage 병합 (진행자 전용 manage 1개, 참가자는 join → guide → write 직행).

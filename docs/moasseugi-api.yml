@@ -31,7 +31,7 @@ info:
     ## 에러 응답
     - 실패 응답은 `Error{code, message, fieldErrors}` 형식이며, `code`는 HTTP 상태와 별도의 `SCREAMING_SNAKE` 도메인 식별자다. 하나의 HTTP 상태에 여러 `code`가 대응할 수 있다.
     - `message`는 한글 한 줄이며, `fieldErrors`는 400 입력값 오류에만 사용한다.
-    - 엔드포인트별로 반환 가능한 `code`는 각 응답의 `description`에 명시한다. FE 화면 분기는 `docs/모아쓰기-프론트설계.md`의 오류 처리를 따른다.
+    - 엔드포인트별로 반환 가능한 `code`는 각 응답의 `description`에 명시한다. FE 화면 분기는 `docs/moasseugi-frontend.md`의 오류 처리를 따른다.
 
 servers:
   - url: http://localhost:8080/api
@@ -78,7 +78,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '409':
-          description: 이미 사용 중인 아이디 (code: USERNAME_TAKEN)
+          description: "이미 사용 중인 아이디 (code: USERNAME_TAKEN)"
           content:
             application/json:
               schema:
@@ -108,7 +108,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
-          description: 아이디·비밀번호 불일치 (code: INVALID_CREDENTIALS)
+          description: "아이디·비밀번호 불일치 (code: INVALID_CREDENTIALS)"
           content:
             application/json:
               schema:
@@ -159,7 +159,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
         '400':
-          description: 과거시각 지정 또는 작성마감이 평가마감보다 빠르지 않음 (code: INVALID_TIME_RANGE)
+          description: "과거시각 지정 또는 작성마감이 평가마감보다 빠르지 않음 (code: INVALID_TIME_RANGE)"
           content:
             application/json:
               schema:
@@ -235,7 +235,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
         '401':
-          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          description: "토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)"
           content:
             application/json:
               schema:
@@ -268,7 +268,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
         '400':
-          description: 과거시각 지정 또는 시간 역전 (code: INVALID_TIME_RANGE)
+          description: "과거시각 지정 또는 시간 역전 (code: INVALID_TIME_RANGE)"
           content:
             application/json:
               schema:
@@ -276,7 +276,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: 진행자가 아님 (code: NOT_HOST)
+          description: "진행자가 아님 (code: NOT_HOST)"
           content:
             application/json:
               schema:
@@ -284,7 +284,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 단계 허용 외 필드 수정 또는 결과 단계 수정 (code: INVALID_PHASE_ACTION)
+          description: "단계 허용 외 필드 수정 또는 결과 단계 수정 (code: INVALID_PHASE_ACTION)"
           content:
             application/json:
               schema:
@@ -320,7 +320,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/JoinSessionResponse'
         '400':
-          description: 닉네임 누락·문자 규칙 위반 (code: INVALID_NICKNAME)
+          description: "닉네임 누락·문자 규칙 위반 (code: INVALID_NICKNAME)"
           content:
             application/json:
               schema:
@@ -330,7 +330,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 세션 내 닉네임 중복, 이미 참가한 회원 또는 참가 가능 단계 종료 (code: NICKNAME_TAKEN·ALREADY_JOINED·JOIN_CLOSED)
+          description: "세션 내 닉네임 중복, 이미 참가한 회원 또는 참가 가능 단계 종료 (code: NICKNAME_TAKEN·ALREADY_JOINED·JOIN_CLOSED)"
           content:
             application/json:
               schema:
@@ -391,13 +391,13 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
-          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          description: "토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)"
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: 남의 아이디어 id로 수정 (code: NOT_IDEA_OWNER)
+          description: "남의 아이디어 id로 수정 (code: NOT_IDEA_OWNER)"
           content:
             application/json:
               schema:
@@ -405,7 +405,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 작성 단계가 아니거나 4번째 저장 시도 (code: INVALID_PHASE_ACTION·IDEA_LIMIT_EXCEEDED)
+          description: "작성 단계가 아니거나 4번째 저장 시도 (code: INVALID_PHASE_ACTION·IDEA_LIMIT_EXCEEDED)"
           content:
             application/json:
               schema:
@@ -436,7 +436,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Idea'
         '401':
-          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          description: "토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)"
           content:
             application/json:
               schema:
@@ -464,13 +464,13 @@ paths:
         '204':
           description: 삭제 성공
         '401':
-          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          description: "토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)"
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: 남의 아이디어 삭제 (code: NOT_IDEA_OWNER)
+          description: "남의 아이디어 삭제 (code: NOT_IDEA_OWNER)"
           content:
             application/json:
               schema:
@@ -478,7 +478,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 작성 단계가 아님 (code: INVALID_PHASE_ACTION)
+          description: "작성 단계가 아님 (code: INVALID_PHASE_ACTION)"
           content:
             application/json:
               schema:
@@ -507,7 +507,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: 진행자가 아님 (code: NOT_HOST)
+          description: "진행자가 아님 (code: NOT_HOST)"
           content:
             application/json:
               schema:
@@ -515,7 +515,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 작성 단계가 아님 (code: INVALID_PHASE_ACTION)
+          description: "작성 단계가 아님 (code: INVALID_PHASE_ACTION)"
           content:
             application/json:
               schema:
@@ -546,7 +546,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/EvaluationItem'
         '401':
-          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          description: "토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)"
           content:
             application/json:
               schema:
@@ -556,7 +556,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 평가 단계가 아님 (code: INVALID_PHASE_ACTION)
+          description: "평가 단계가 아님 (code: INVALID_PHASE_ACTION)"
           content:
             application/json:
               schema:
@@ -593,13 +593,13 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
-          description: 토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)
+          description: "토큰 없음·위조·만료. 비회원 재접속 토큰 만료 시 TOKEN_EXPIRED (code: UNAUTHORIZED·TOKEN_EXPIRED)"
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: 본인 아이디어 평가 (code: SELF_EVALUATION)
+          description: "본인 아이디어 평가 (code: SELF_EVALUATION)"
           content:
             application/json:
               schema:
@@ -607,7 +607,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 평가 단계가 아님 (code: INVALID_PHASE_ACTION)
+          description: "평가 단계가 아님 (code: INVALID_PHASE_ACTION)"
           content:
             application/json:
               schema:
@@ -636,7 +636,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: 진행자가 아님 (code: NOT_HOST)
+          description: "진행자가 아님 (code: NOT_HOST)"
           content:
             application/json:
               schema:
@@ -644,7 +644,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 평가 단계가 아님 (code: INVALID_PHASE_ACTION)
+          description: "평가 단계가 아님 (code: INVALID_PHASE_ACTION)"
           content:
             application/json:
               schema:
@@ -674,7 +674,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 아직 결과를 공개할 단계가 아님 (code: RESULT_NOT_READY)
+          description: "아직 결과를 공개할 단계가 아님 (code: RESULT_NOT_READY)"
           content:
             application/json:
               schema:
@@ -711,7 +711,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: 진행자가 아님 (code: NOT_HOST)
+          description: "진행자가 아님 (code: NOT_HOST)"
           content:
             application/json:
               schema:
@@ -719,7 +719,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: 채택 대기 단계가 아님 (code: INVALID_PHASE_ACTION)
+          description: "채택 대기 단계가 아님 (code: INVALID_PHASE_ACTION)"
           content:
             application/json:
               schema:
@@ -1001,7 +1001,7 @@ components:
         myEvaluation:
           type: integer
           nullable: true
-          enum: [-1, 0, 1, null]
+          enum: [-1, 0, 1]
           description: 현재 참가자의 기존 평가. 아직 평가하지 않았으면 null입니다.
 
     EvaluationWriteRequest:
@@ -1142,31 +1142,31 @@ components:
 
   responses:
     BadRequest:
-      description: 요청 형식 또는 입력값이 올바르지 않음 (code: INVALID_REQUEST, 입력값 오류에는 fieldErrors 포함)
+      description: "요청 형식 또는 입력값이 올바르지 않음 (code: INVALID_REQUEST, 입력값 오류에는 fieldErrors 포함)"
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     Unauthorized:
-      description: 인증 정보가 없거나 유효하지 않음 (code: UNAUTHORIZED. 비회원 재접속 토큰 만료는 엔드포인트별 TOKEN_EXPIRED 참조)
+      description: "인증 정보가 없거나 유효하지 않음 (code: UNAUTHORIZED. 비회원 재접속 토큰 만료는 엔드포인트별 TOKEN_EXPIRED 참조)"
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     Forbidden:
-      description: 인증되었지만 해당 행동을 수행할 권한이 없음 (code: FORBIDDEN, 엔드포인트별 NOT_HOST·NOT_IDEA_OWNER·SELF_EVALUATION 참조)
+      description: "인증되었지만 해당 행동을 수행할 권한이 없음 (code: FORBIDDEN, 엔드포인트별 NOT_HOST·NOT_IDEA_OWNER·SELF_EVALUATION 참조)"
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     NotFound:
-      description: 안건, 참가자 또는 아이디어를 찾을 수 없음 (code: NOT_FOUND)
+      description: "안건, 참가자 또는 아이디어를 찾을 수 없음 (code: NOT_FOUND)"
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     Conflict:
-      description: 현재 안건 단계, 중복 또는 자원 상태 때문에 요청을 처리할 수 없음 (code: 엔드포인트별 도메인 코드 — INVALID_PHASE_ACTION 등)
+      description: "현재 안건 단계, 중복 또는 자원 상태 때문에 요청을 처리할 수 없음 (code: 엔드포인트별 도메인 코드 — INVALID_PHASE_ACTION 등)"
       content:
         application/json:
           schema:
