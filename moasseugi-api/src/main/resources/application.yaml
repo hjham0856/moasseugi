@@ -1,3 +1,10 @@
 spring:
   application:
     name: moasseugi-api
+  profiles:
+    # 로컬 기본값. 배포 확정 시 application-prod.yaml 추가 후 실행 시 override
+    active: local
+server:
+  servlet:
+    # docs/moasseugi-api.yml servers.url (http://localhost:8080/api)에 맞춤
+    context-path: /api
