@@ -48,6 +48,6 @@ M3에서 실제 평가를 확인할 수 있도록 수동 단계 전환 #10을 �
 
 개발 중 H2 local(create-drop)를 사용한다. 서버 재시작 시 데이터는 사라진다. 개발 완료 마지막에 PostgreSQL로 전환하고 연결·스키마·제약·핵심 흐름을 확인한다.
 
-현재 소스에는 기존 Security·JWT·생성기·오류코드·BaseEntity가 남아 있다. #1·#2에서 제거·축소할 예정이며 문서 개정만으로 구현 완료 처리하지 않는다.
+Security·JWT·OpenAPI 생성기 설정은 #1에서, 공통 오류코드·BusinessException·BaseEntity와 JPA 시간 자동 기록은 #2에서 제거했다. 공통 오류 응답은 HTTP 상태와 `{message}`만 제공한다.
 
 개정 전 개요 PDF는 `archive/moasseugi-overview-before-simplification.pdf`에 보관한다. 현재 요구사항은 이 문서와 API·DB·프론트 설계를 따른다.

@@ -27,9 +27,8 @@
 ## 백엔드 명령과 명세
 - `gradlew` 실행권한 없음. **`sh gradlew`로 실행**.
 - `sh gradlew build` — 백엔드 빌드·테스트.
-- 현재 코드에는 기존 생성기 플러그인이 남아 있다. #1에서 제거 예정이며 이번 정리는 문서·이슈 변경이다.
-- 플러그인이 남아 있는 동안 yml 수정 후 `sh gradlew openApiValidate`로 검증한다. 제거 후에는 OpenAPI 3.0 검증 도구로 계약을 검증한다.
-- `openApiGenerate`는 사용하지 않는다. 생성 인터페이스 구현을 전제하지 않고 DTO·컨트롤러를 직접 작성한다. `build/generated` 직접 수정·커밋 금지.
+- `docs/moasseugi-api.yml`을 수정한 뒤 `npx --yes @redocly/cli lint --extends minimal docs/moasseugi-api.yml`로 OpenAPI 3.0 계약을 검증한다.
+- OpenAPI 코드는 생성하지 않는다. 생성 인터페이스 구현을 전제하지 않고 DTO·컨트롤러를 직접 작성한다.
 - 남기는 API의 operationId·tag는 불필요하게 변경하지 않는다. 제외 기능의 경로·스키마는 명세에서 제거한다.
 - 한 줄 description에 콜론+공백이 있으면 쌍따옴표로 감싼다. enum에 null을 넣지 않고 `nullable: true`로 표현한다.
 

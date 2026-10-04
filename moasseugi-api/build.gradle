@@ -2,9 +2,6 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.1.1'
 	id 'io.spring.dependency-management' version '1.1.7'
-	// 이슈 #1: yml 변경 시에만 수동 실행 (평소 빌드와 무관, B방식)
-	//   sh gradlew openApiValidate / openApiGenerate
-	id 'org.openapi.generator' version '7.25.0'
 }
 
 group = 'io.github.hjham0856'
@@ -21,11 +18,7 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 	implementation 'org.springframework.boot:spring-boot-h2console'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
@@ -43,31 +36,4 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
-}
-
-// 이슈 #1: docs/moasseugi-api.yml이 단일 진실 원천. yml 수정 시에만 수동 실행.
-// 평소 빌드에서는 실행하지 않음 (compileJava와 연결하지 않음).
-openApiValidate {
-	inputSpec = "$rootDir/../docs/moasseugi-api.yml"
-}
-
-openApiGenerate {
-	generatorName = "spring"
-	inputSpec = "$rootDir/../docs/moasseugi-api.yml"
-	outputDir = "$buildDir/generated"
-	apiPackage = "io.github.hjham0856.moasseugi.api"
-	modelPackage = "io.github.hjham0856.moasseugi.model"
-	configOptions = [
-		useSpringBoot3: "true",
-		interfaceOnly: "true",
-		useTags: "true",
-		openApiNullable: "false",
-		dateLibrary: "java8",
-		hideGenerationTimestamp: "true",
-		performBeanValidation: "true"
-	]
-	globalProperties = [
-		apis: "",
-		models: ""
-	]
 }
