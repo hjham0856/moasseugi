@@ -11,8 +11,8 @@
 - 구현 후에는 실제 구현이 기존 의도와 일치하는지 확인하고, 필요하면 관련 문서의 현재 상태와 검증 결과를 갱신한다.
 
 ## 구조와 기준 문서
-- `PRODUCT.md` — 제품의 목적·문제·사용자 가치·원칙과 현재 합의된 제품 범위.
-- `TESTING.md` - 모든 테스트 작성의 기준점.
+- `docs/PRODUCT.md` — 제품의 목적·문제·사용자 가치·원칙과 현재 합의된 제품 범위.
+- `docs/TESTING.md` - 모든 테스트 작성의 기준점.
 - `moasseugi-api/` — Spring Boot 4.1.1, Java 21, Gradle. context-path는 `/api`.
 - `moasseugi-web/` — Vue 3.5 + TS + vue-router + pinia. HTTP는 얇은 `fetch` 래퍼, axios 미도입. 스토어는 실제 필요할 때만 사용한다.
 - `docs/moasseugi-overview.md` — 현재 제품 범위와 단계별 구현 순서.
