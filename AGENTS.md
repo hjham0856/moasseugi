@@ -1,29 +1,50 @@
 # AGENTS.md
 
-## 구조
-- `moasseugi-api/` — Spring Boot 4.1.1, Java 21, Gradle. `server.servlet.context-path: /api`
-- `moasseugi-web/` — Vue 3.5 + TS + vue-router + pinia. HTTP는 `fetch` 래퍼, axios 미도입
-- `docs/moasseugi-api.yml` — API 단일 진실 원천 (OpenAPI 3.0.3 유지)
-- `docs/moasseugi-db.dbml`, `docs/moasseugi-frontend.md` — DB·프론트 설계
-- `demo/` — 정적 화면 참고용. 구조만 참고, CSS 이식 금지
+## 제품 맥락 지침
+- 작업을 시작하기 전에 프로젝트 루트의 `PRODUCT.md`가 존재하는지 확인한다.
+- `PRODUCT.md`가 존재한다면 구현이나 설계를 시작하기 전에 먼저 읽고, 그 문서에 기록된 제품의 목적, 문제, 사용자 가치, 원칙을 작업의 기준으로 삼는다.
+- 코드와 기술 문서만으로 제품의 의도를 추측하지 않는다.
+- 기술적으로 더 일반적이거나 익숙한 방법이 있더라도, 그 선택이 `PRODUCT.md`에 적힌 제품 목적과 충돌한다면 제품 목적을 우선한다.
+- 요구사항이 불명확하거나 여러 구현 방향이 가능할 때에는 단순히 기술적으로 가장 흔한 선택을 하지 말고, 제품의 Why와 Problem을 기준으로 판단한다.
+- 현재 요청이나 구현 방향이 제품 목적과 충돌할 가능성이 있다면 바로 구현하지 말고 그 충돌을 먼저 사용자에게 제시한다.
+- 대화 중 제품의 목적, 요구사항, 설계 의도에 대한 중요한 결정이 내려졌다면 해당 내용을 적절한 문서에 반영한다.
+- 구현 후에는 실제 구현이 기존 의도와 일치하는지 확인하고, 필요하면 관련 문서의 현재 상태와 검증 결과를 갱신한다.
 
-## 백엔드 명령 (moasseugi-api/에서)
-- `gradlew`에 실행권한 없음. **`sh gradlew`로 실행**
-- `sh gradlew build` — 평소 빌드 (generator와 무관)
-- `sh gradlew openApiValidate` — yml 수정 후 필수
-- `sh gradlew openApiGenerate` — yml 바뀔 때만 수동 실행. 출력은 `build/generated` (git 무시, 커밋 금지)
+## 구조와 기준 문서
+- `PRODUCT.md` — 제품의 목적·문제·사용자 가치·원칙과 현재 합의된 제품 범위.
+- `moasseugi-api/` — Spring Boot 4.1.1, Java 21, Gradle. context-path는 `/api`.
+- `moasseugi-web/` — Vue 3.5 + TS + vue-router + pinia. HTTP는 얇은 `fetch` 래퍼, axios 미도입. 스토어는 실제 필요할 때만 사용한다.
+- `docs/moasseugi-overview.md` — 현재 제품 범위와 단계별 구현 순서.
+- `docs/moasseugi-api.yml` — 현재 API 계약의 단일 진실 원천. OpenAPI 3.0.3 유지.
+- `docs/moasseugi-db.dbml`, `docs/moasseugi-frontend.md` — 현재 DB·프론트 설계.
+- `docs/archive/` — 개정 전 자료. 현재 구현 요구사항으로 사용하지 않는다.
+- `demo/` — 화면 구조만 참고, CSS 이식 금지. 과거 인증·시간·라우트 구성을 그대로 구현하지 않는다.
 
-## yml 수정 규칙
-- `description:` 한 줄 값에 콜론+공백(`(code: XXX)` 등)이 들어가면 **반드시 쌍따옴표**로 감쌀 것. 안 그러면 YAML 파서가 `code:`를 중첩 맵으로 오해해 validate 실패
-- `enum`에 `null` 넣지 말 것. null 허용은 `nullable: true`로만 표현 (이미 그렇게 되어 있음)
-- `operationId`·`tag` 함부로 변경 금지 (generator `interfaceOnly`, `useTags` 기준)
-- 생성된 코드(`build/generated`) 직접 수정 금지. yml → validate → generate → 구현체 수정 순서
+## 구현 기준
+- 안건별 랜덤 참가 키로 참가자를 찾고 생성자를 진행자로 구분한다. 키로 신원을 찾는 부분은 한 곳에 둔다.
+- 오류는 HTTP 상태와 `{message}`. ErrorCode·BusinessException·BaseEntity 등 공통 기반을 선행 확장하지 않는다.
 
-## 프로파일
-- `application.yaml` 공통 + `application-local.yaml`(H2, create-drop). 기본 active는 `local`
-- `application-prod.yaml` 없음. 배포 확정 시 추가 예정. JWT 시크릿·만료 설정은 #3(Auth)에서 도입
+## 백엔드 명령과 명세
+- `gradlew` 실행권한 없음. **`sh gradlew`로 실행**.
+- `sh gradlew build` — 백엔드 빌드·테스트.
+- 현재 코드에는 기존 생성기 플러그인이 남아 있다. #1에서 제거 예정이며 이번 정리는 문서·이슈 변경이다.
+- 플러그인이 남아 있는 동안 yml 수정 후 `sh gradlew openApiValidate`로 검증한다. 제거 후에는 OpenAPI 3.0 검증 도구로 계약을 검증한다.
+- `openApiGenerate`는 사용하지 않는다. 생성 인터페이스 구현을 전제하지 않고 DTO·컨트롤러를 직접 작성한다. `build/generated` 직접 수정·커밋 금지.
+- 남기는 API의 operationId·tag는 불필요하게 변경하지 않는다. 제외 기능의 경로·스키마는 명세에서 제거한다.
+- 한 줄 description에 콜론+공백이 있으면 쌍따옴표로 감싼다. enum에 null을 넣지 않고 `nullable: true`로 표현한다.
+
+## DB·프로파일
+- 개발은 기존 local 프로파일의 H2(create-drop). 재시작 시 개발 데이터가 사라진다.
+- 개발 완료 마지막 단계에 PostgreSQL로 전환한다. 연결·스키마·제약과 핵심 흐름을 PostgreSQL에서 확인한다.
+- 현행 `application-prod.yaml` 없음. PostgreSQL 연결과 비밀 설정 방식은 마지막 전환 작업에서 정한다. JWT 설정은 이번 범위 밖이다.
 
 ## 작업 방식
-- #3까지 main 직행. 커밋 메시지에 `Closes #n` 포함하면 이슈 자동 종료·링크됨
-- 사용자와 대화하면서 진행: 제안 → 확인 → 실행. 묻지 않고 연달아 진행하지 말 것
-- 순서: #2 공통 기반 → #3 Auth·User → (#4 전에 #10 단계전환 함수 시그니처 먼저 합의) → #4~#10 → #11 테스트(H2 단일 프로파일, vitest·E2E 없음)
+- 사용자와 대화하며 제안 → 확인 → 실행. 이미 승인한 작업은 그 범위 안에서 계속 진행한다. 미정 제품 규칙을 임의로 확정하지 않는다.
+- 각 구현 단계에서 과도한 테스트와 확인된 요구 없이 선제적으로 복잡도를 늘리는 구현을 금지한다.
+- 공통 기반 전체→백엔드 전체→프론트 전체 순서 대신 생성·참가→작성·평가→관리·결과 순으로 서버와 화면을 연결한다.
+- #1·#2 축소 정리 후 #3·#4·#6과 대응 프론트로 첫 흐름을 만든다. #10의 복잡한 시간 전환 함수 시그니처 선행 합의는 필요 없다.
+- #10 수동 단계 전환은 M3 작성·평가와 함께 구현해 실제 평가 흐름을 확인한다. M4에서는 관리 영역·결과·채택을 연결한다.
+- 공용 스토어·컴포넌트는 화면 구현 중 실제 반복이 생기면 추출한다. 이를 위한 별도 선행 기반 작업은 두지 않는다.
+- #3까지 main 직행 방침 유지. 이후 브랜치 방식은 작업 시 확인. 커밋·push는 요청 범위에 맞게 진행한다.
+- `Closes #n`은 실제 완료한 이슈에만 사용한다. 문서 개정만으로 구현 이슈를 완료 처리하지 않는다.
+- 의미 있는 소유자·단계·저장 검증을 기능에 맞게 수행한다. 개발 중 H2 단일 프로파일, 프론트 vitest·E2E 도입 없음. 마지막 PostgreSQL 전환 때 DB 확인 추가.

@@ -1,78 +1,50 @@
 # 모아쓰기 프론트 설계
 
-> 기준: `demo/` 화면 구조만 참고(스타일은 새로) + `docs/moasseugi-api.yml`
-> 스택: Vue 3.5 + TS + vue-router + pinia. HTTP는 `fetch` 래퍼(axios 미도입). QR은 `qrcode.vue` 추가 예정.
-> 상태: 검토 완료 (2026-09-29). 본 문서의 라우트·클라이언트·스토어·파일구조안은 확정으로 간주한다.
-> 개정 2026-09-29: lobby·manage 병합 (진행자 전용 manage 1개, 참가자는 join → guide → write 직행).
+2026-10-03 범위 축소 반영. 현재 API 계약은 `moasseugi-api.yml`, 제품 범위는 `moasseugi-overview.md`를 따른다. 기존 12개 라우트·스토어·컴포넌트 구조는 구현 의무에서 제외한다.
 
-## 1. 라우트표
+## 화면 구성
 
-공유 URL: `{webOrigin}/s/{sessionId}` (UUID). 세션 스코프는 전부 `/s/:sessionId` 하위.
+- 홈: 서비스의 독립 작성→익명 평가→채택 흐름을 설명하고 안건 만들기로 연결하는 안. 생성 폼을 홈에 둘지 별도 화면에 둘지는 구현 때 확인한다.
+- 공유 진입점: `/s/:sessionId`. 아직 참가하지 않았으면 닉네임 입력을 제공한다. 작성 단계에서만 신규 참가 가능하다.
+- 작성: 입력칸 하나와 저장 버튼. 기존 내용을 조회해 수정 가능. 추가·삭제 기능 없음. 다른 참가자의 아이디어는 표시하지 않는다.
+- 평가: 본인 아이디어를 제외한 익명 아이디어와 좋음/괜찮음/별로 선택. 선택 시 항목별 API 저장. 별도 제출 버튼 없음.
+- 결과: 아이디어와 평가 분포를 표시한다. 평가 0건인 항목은 분포 없이 “평가 없음”. 채택작을 같은 결과 화면에 표시하며 채택작 작성자만 공개한다.
+- 진행자 관리 영역: QR·공유 링크 복사·참가자 목록·다음 단계 버튼. 별도 관리 화면으로 둘지 안건 화면 안에 둘지는 미정이다. 작성·평가 완료 인원 집계 없음.
 
-| path | demo 원본 | 접근 | 설명 |
-| ---- | --------- | ---- | ---- |
-| `/` | index | 전체 | 홈. 서비스 설명 + 내 안건(만든 안건·참여한 안건) |
-| `/signup` | signup | 비로그인 | 회원가입 |
-| `/login` | login | 비로그인 | 로그인 |
-| `/sessions/new` | create-session | 로그인 | 안건 생성(제목·설명·작성마감·평가마감) |
-| `/s/:sessionId` | join | 전체 | 모두 닉네임 입력. 회원은 username을 미리 채우되 수정 가능. 이미 참가한 진행자는 관리로, 참가자는 현재 단계 화면으로 이동 |
-| `/s/:sessionId/guide` | guide | 신규 참가자 | 참여 안내·유의사항. 신규 참가 성공(201) 직후 한 번 표시하고 이후 write로 이동 |
-| `/s/:sessionId/manage` | lobby + writing-control | 진행자 | 공유·대기·관리 통합. QR·링크·참가자 목록·마감 카운트다운(+5분 연장·시간 변경)·조기 종료. WRITING이면 작성 관리, EVALUATING이면 평가 관리로 내용 전환 |
-| `/s/:sessionId/write` | writing | 참가자 | 내 아이디어 작성(최대 3, 항목별 저장) |
-| `/s/:sessionId/evaluate` | evaluation | 참가자 | 평가 1장씩 넘기기(일괄 조회 후 클라 페이징) |
-| `/s/:sessionId/results` | results | 전체 | RESULT_PENDING_SELECTION이면 분포 결과, NO_IDEAS면 같은 화면의 아이디어 없음 뷰 표시 |
-| `/s/:sessionId/select` | selection | 진행자 | 최종 채택(모달 확정) |
-| `/s/:sessionId/final` | final-result | 전체(링크만 알면 비로그인 가능) | 최종 결과. 채택작 작성자만 공개 |
+공유 진입점은 고정하지만 나머지 상세 라우트는 화면 구현 시 정한다. 별도 전역 viewer/단계 가드를 선행 구현하지 않는다. 서버 응답의 현재 단계에 맞는 내용을 표시하고 서버에서 행동 허용 여부를 확인한다.
 
-- `dashboard.html`의 구 홈 리다이렉트는 라우터에서 `/`로 흡수.
-- 오류 화면은 별도 라우트 없이 공용 `StateView` 컴포넌트로 표시: bad-link(`NOT_FOUND`), no-access(`NOT_HOST`/403), join-closed(`JOIN_CLOSED`), token-expired(`TOKEN_EXPIRED`/401), offline/save-failed(네트워크 실패). 아이디어 없음은 results 내부 뷰로 표시한다.
-- 비회원 join 화면에는 “비회원 참여 정보는 참가 후 24시간 동안 유효합니다. 이후에는 기존 작성·평가 기록으로 재접속할 수 없습니다.”라고 안내한다. token-expired 화면에서는 인증 헤더 없이 `GET /sessions/{id}`를 다시 호출해 단계를 확인한다. WRITING이면 새 닉네임으로 다시 참가하도록, 이후 단계라면 결과 공개 후 공유 링크에서 확인하도록 안내한다.
-- 전역 가드: 세션 스코프 진입 시 `GET /sessions/{id}`로 현재 단계 조회 → 단계·`viewer`에 맞지 않으면 정위치로 리다이렉트(예: EVALUATING에 join 직접 접근한 참가자 → evaluate, 진행자 → manage).
-- 결과 단계 리다이렉트: `RESULT_PENDING_SELECTION`은 results(진행자는 select 이동 가능), `COMPLETED`는 final, `NO_IDEAS`는 results의 아이디어 없음 뷰로 이동.
-- 공개 results/final 경로의 상태 조회는 인증 헤더 없이 `GET /sessions/{id}`를 호출한다. 이 경로는 로그인 토큰 만료와 관계없이 열 수 있어야 한다.
-- 참가자 동선: 신규 참가 201 → guide → write. 재접속 시 `viewer.isParticipant`가 참이면 guide를 건너뛰고 현재 단계 화면으로 이동한다. 진행자는 세션 생성 시 자동 참가하므로 manage로 이동한다.
+참여 가이드나 오류 전용 화면을 먼저 만들지 않고 안내 문구는 관련 화면에 두는 안이다. 작성·평가에 필요한 설명 자체는 유지한다. `demo/`는 구조만 참고하고 CSS는 이식하지 않는다.
 
-## 2. API 클라이언트
+## 생성·참가와 키
 
-- `src/api/client.ts`: `fetch` 래퍼. `VITE_API_BASE_URL` (기본값 `http://localhost:8080/api`).
-- 헤더 기본 부착: JWT는 `localStorage['moasseugi.accessToken']` → `Authorization: Bearer`, 참가 토큰은 `localStorage['moasseugi.participant.<sessionId>']` → `X-Participant-Token`. 둘 다 있으면 서버는 JWT만 사용하고 참가 토큰을 무시한다. JWT가 만료됐으면 참가 토큰으로 대체하지 않고 401을 처리한다. 공개 `GET results`와 공개 results/final 경로의 상태 조회에는 두 헤더를 보내지 않는다.
-- 비회원으로 참가한 뒤 로그인하면 그 기록은 회원 계정에 합쳐지지 않는다. 로그인 상태에서는 JWT 신원을 사용하고, 로그아웃하면 유효기간이 남은 비회원 토큰으로 기존 참가 기록을 다시 사용할 수 있다.
-- 실패 시 `ApiError{status, code, message, fieldErrors}` throw. 아래 구현 메모의 오류 분기대로 화면을 분기한다.
-- `src/api/types.ts`: yml 스키마 hand-written 타입(SessionDetail, Idea, EvaluationItem, ResultResponse 등). 백엔드 generator와 별개, yml 변경 시 수동 동기화.
-- `src/api/*.ts`: 도메인별 함수(`auth.ts`, `sessions.ts`, `participants.ts`, `ideas.ts`, `evaluations.ts`, `results.ts`).
+- 생성 폼은 제목·설명·진행자 닉네임을 받는 기본안이다. 닉네임 입력 위치는 화면 구현 때 확인한다.
+- 생성 응답의 `session`, `participant`, `reconnectToken`으로 해당 안건의 진행자 참가 정보를 보관한다.
+- 참가 응답도 `participant`, `reconnectToken`. 키는 안건별로 보관하고 요청 시 `X-Participant-Token` 헤더에 넣는다.
+- 보관 키는 기존 `moasseugi.participant.<sessionId>` 이름을 재사용하는 안이다. 키와 필요한 참가 정보 외에 전체 안건 데이터를 영속화하지 않는다.
+- 같은 브라우저의 재접속은 보관한 키로 현재 참가자를 확인한다. JWT·회원/비회원 이중 분기·24시간 만료 없음.
+- 키 분실 시 복구 없음. 작성 중이라면 중복되지 않는 닉네임으로 새 참가 가능하며 기존 기록은 이전하지 않는다. 진행자 키 분실 시 관리 불가.
+- 같은 안건의 닉네임 중복은 거부한다. 대소문자·공백 비교 세부 방식은 구현 때 확인하며 기존 문자 패턴을 의무로 적용하지 않는다.
 
-## 3. 스토어 최소안 (영속은 토큰만)
+## 작성·평가·결과 동작
 
-- `useAuthStore`: `user`, `accessToken`. `signup/login/logout`, 앱 시작 시 토큰 있으면 `GET /users/me`로 복원하고 401이면 만료된 JWT를 지운다. 영속: `moasseugi.accessToken` 하나만.
-- `useSessionStore`: 현재 세션 컨텍스트. `detail(SessionDetail)`, `participantToken`(세션별), 5초 폴링으로 단계 전환 감지 → 전환 시 라우터 이동. 영속: `moasseugi.participant.<sessionId>` (비회원 재접속용).
-- 아이디어 초안·평가 선택 상태는 컴포넌트 로컬(미저장 입력은 서버에 안 보내고, 새로고침 시 날아감 — 명세상 자동 저장 없음).
-- `counter.ts` 예제 스토어는 삭제.
+- 내 아이디어 조회는 0~1개를 반환한다. 입력 내용을 저장하고, 이후 같은 참가자의 아이디어를 수정한다. 생성 요청을 재전송해도 참가자당 1개만 유지하도록 API가 처리한다.
+- 저장되지 않은 초안은 화면 안에서 관리한다. 저장 실패 시 입력을 유지하고 안내한다. 삭제·자동 저장·3개 제한 UI 없음.
+- 평가 선택은 즉시 API에 보낸다. 저장 중에는 해당 아이디어의 버튼만 잠시 비활성화하는 안으로 요청 순서 문제를 줄인다. 성공한 평가를 표시하고 실패 시 저장 실패를 알린 뒤 다시 선택할 수 있게 한다.
+- 평가 대상이 없으면 “평가할 아이디어가 없습니다”를 표시하고 진행자의 결과 전환을 기다린다. 본인 아이디어만 있는 경우가 해당할 수 있다.
+- 진행자의 평가 시작 요청이 아이디어 0개 때문에 거부되면 작성 화면에서 “등록된 아이디어가 없습니다”를 표시한다. 빈 결과 화면으로 이동하지 않는다.
+- 평가 종료 후 저장된 평가만 집계한다. 평가가 없는 아이디어도 결과에 표시하고 채택할 수 있다.
+- 결과에서 진행자는 하나를 채택할 수 있다. 이미 채택됐으면 변경 기능을 제공하지 않는다. 별도 완료 상태·최종 라우트가 필수는 아니다.
 
-## 4. 화면별 데이터 흐름
+## 최소한의 공용 코드
 
-- **홈**: `GET /sessions/hosted` + `GET /sessions/participated`(로그인 시). 두 목록에 같은 세션 ID가 있으면 `내가 만든 안건`에만 표시한다. 비로그인은 서비스 설명 + 로그인 유도.
-- **생성**: 폼 → `POST /sessions` → manage로 이동. 진행자 participant는 서버가 자동 생성.
-- **참가**: 회원·비회원 모두 닉네임 입력창을 표시하고 선택한 닉네임을 본문에 담아 `POST participants`로 보낸다. 회원은 `GET /users/me`의 username을 초깃값으로 넣고 수정할 수 있다. 해당 세션에서 닉네임이 중복돼 `NICKNAME_TAKEN`이 오면 “이미 이 안건에서 사용 중인 닉네임이에요. 다른 닉네임을 입력해 주세요.”라고 안내한다. 새 참가 응답 201 뒤에만 guide를 표시한다. 토큰 분실·만료 후 새 닉네임으로 참가하면 이전 기록은 복원하지 않는다.
-- **manage**: `GET /sessions/{id}`(폴링 5초) + `GET participants`. QR은 세션 UUID URL로 클라 생성. `+5분 연장`은 PATCH. 조기 종료는 모달 확정 후 `POST close-writing/close-evaluation`. “나도 작성하기” 버튼으로 write 진입, 관리 복귀 버튼으로 manage 복귀.
-- **write**: `GET ideas/me`로 복원 → 항목별 `PUT ideas` 저장, 삭제는 `DELETE`. 3개 도달 시 추가 버튼 비활성화(서버 409 이중 검증). 첫 저장(`id` 없음)에서 네트워크 오류·5xx가 나면 성공 여부를 알 수 없으므로 입력을 유지하고 `GET ideas/me`로 서버의 저장 목록을 다시 보여준다. 사용자가 목록을 확인하고 안건이 아직 WRITING일 때만 저장을 다시 시도하며, 같은 생성 요청을 자동 재전송하지 않는다. 이미 `id`가 있는 수정 저장은 같은 `id`로 재시도할 수 있다.
-- **evaluate**: `GET evaluation-items` 일괄 → 클라에서 1장씩. 항목별 `PUT evaluations`. 진행 표시 `n/m`은 “내가 평가한 수” (집계 아님). 대상이 0건이면 평가할 아이디어가 없다는 안내를 표시하고 마감 또는 진행자의 조기 종료까지 현재 단계에 머문다.
-- **results/select/final**: `GET results`. NO_IDEAS에서는 `ideas: []`을 받아 results의 아이디어 없음 뷰를 표시한다. select는 진행자만, 모달 확정 후 `POST select-idea` → final.
-- **타이머**: `serverTime`으로 오프셋 보정 후 클라 카운트다운 표시. 단계 전환 판단은 폴링 응답의 `status`로만 수행.
+HTTP는 `fetch` 래퍼와 필요한 타입·함수만 둔다. `VITE_API_BASE_URL`과 API context-path `/api`를 사용한다. 오류는 HTTP 상태와 `{message}`로 안내하고 도메인 오류코드·fieldErrors 분기를 만들지 않는다.
 
-## 5. 파일 구조안
+Pinia는 설치되어 있지만 auth 스토어·거대한 session 스토어를 미리 만들지 않는다. Toast·ConfirmModal·StateView 같은 공용 부품도 화면에서 반복이 생길 때 추출하는 안이다. 예제 `counter.ts`는 연동 정리 때 제거한다.
 
-```
-src/
-  api/          client.ts types.ts auth.ts sessions.ts participants.ts ideas.ts evaluations.ts results.ts
-  router/       index.ts (가드 포함)
-  stores/       auth.ts session.ts
-  views/        Home/Login/Signup/SessionNew/Join/Guide/Manage/Write/Evaluate/Results/Select/Final.vue
-  components/   StateView/Countdown/SessionStepper/ConfirmModal/Toast/AppHeader.vue
-  composables/  usePolling.ts useCountdown.ts
-```
+QR 라이브러리는 사용할 수 있다. QR에는 참가용 공유 URL만 담고 진행자 키를 넣지 않는다.
 
-## 구현 메모
+여러 브라우저에서 단계·참가자 목록·채택 변경을 반영할 수 있어야 한다. 간단한 폴링을 기본 구현안으로 두고 간격은 구현 시 정한다. 타이머·서버 시각 보정·WebSocket은 선행 범위가 아니다.
 
-- 반응형(PC/모바일) 새로 설계. demo CSS는 이식하지 않음.
-- 400 → 입력란 에러 표시(`fieldErrors`), 401 → 로그인·재참가 유도(JWT 만료 `UNAUTHORIZED`는 로그인 유도, 비회원 토큰 만료 `TOKEN_EXPIRED`는 token-expired 화면), 403 → no-access, 409 → 코드별 안내 문구, 404 → bad-link.
-- 오프라인·저장 실패 시 입력을 유지한다. 첫 아이디어 저장의 응답이 불명확하면 버튼을 `저장 내용 확인`으로 표시해 서버 목록을 먼저 다시 조회한다. 조회도 실패하면 입력을 계속 보존하고 재조회할 수 있게 한다.
+## 확인
+
+기능별 서버 검증과 함께 진행자·참가자 두 브라우저에서 실제 흐름을 수동 확인한다. 프론트 vitest·E2E는 도입하지 않는다. 네트워크 오류 안내와 입력 유지도 확인한다.
