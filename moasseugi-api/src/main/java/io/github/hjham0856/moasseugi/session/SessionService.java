@@ -2,6 +2,7 @@ package io.github.hjham0856.moasseugi.session;
 
 import io.github.hjham0856.moasseugi.participant.ParticipantEntity;
 import io.github.hjham0856.moasseugi.participant.ParticipantRepository;
+import io.github.hjham0856.moasseugi.participant.ParticipantService;
 import io.github.hjham0856.moasseugi.participant.ParticipantTokenGenerator;
 import io.github.hjham0856.moasseugi.session.SessionApiModels.CreateRequest;
 import io.github.hjham0856.moasseugi.session.SessionApiModels.CreateResponse;
@@ -34,11 +35,13 @@ public class SessionService {
 
     @Transactional
     public CreateResponse createSession(CreateRequest request) {
+        // 진행자 닉네임도 신규 참가와 같은 확정 정책(앞뒤 공백 제거·대소문자 구분)으로 정규화한다.
+        String nickname = ParticipantService.normalizeNickname(request.nickname());
         SessionEntity session = sessionRepository.save(
                 new SessionEntity(request.title(), request.description()));
         String participantToken = participantTokenGenerator.generate();
         ParticipantEntity host = participantRepository.save(
-                new ParticipantEntity(session, request.nickname(), participantToken, true));
+                new ParticipantEntity(session, nickname, participantToken, true));
 
         return new CreateResponse(toDetail(session), toSummary(host), participantToken);
     }
