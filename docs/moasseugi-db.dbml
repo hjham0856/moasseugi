@@ -31,7 +31,7 @@ Table participants {
   id uuid [pk]
   session_id uuid [not null]
   nickname varchar(30) [not null, note: '같은 안건에서 중복 금지. 공백·대소문자 비교 방식은 구현 때 확인']
-  reconnect_token varchar(255) [not null, unique, note: '안건별 랜덤 참가 키. 생성자에게도 발급. 만료·복구 정책 없음']
+  participant_token varchar(255) [not null, unique, note: '안건별 랜덤 참가 키. 생성자에게도 발급. 만료·복구 정책 없음']
   is_host boolean [not null, default: false]
   indexes {
     (session_id, nickname) [unique]

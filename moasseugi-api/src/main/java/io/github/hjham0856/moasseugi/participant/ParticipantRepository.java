@@ -7,5 +7,5 @@ import java.util.UUID;
 
 public interface ParticipantRepository extends JpaRepository<ParticipantEntity, UUID> {
 
-    Optional<ParticipantEntity> findBySession_IdAndReconnectToken(UUID sessionId, String reconnectToken);
+    Optional<ParticipantEntity> findBySession_IdAndParticipantToken(UUID sessionId, String participantToken);
 }

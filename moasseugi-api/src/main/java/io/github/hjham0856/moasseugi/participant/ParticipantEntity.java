@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "participants", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_participant_reconnect_token", columnNames = "reconnect_token"),
+        @UniqueConstraint(name = "uk_participant_token", columnNames = "participant_token"),
         @UniqueConstraint(name = "uk_participant_session_nickname", columnNames = {"session_id", "nickname"})
 })
 public class ParticipantEntity {
@@ -34,8 +34,8 @@ public class ParticipantEntity {
     @Column(nullable = false, length = 30)
     private String nickname;
 
-    @Column(name = "reconnect_token", nullable = false, length = 43)
-    private String reconnectToken;
+    @Column(name = "participant_token", nullable = false, length = 43)
+    private String participantToken;
 
     @Column(name = "is_host", nullable = false)
     private boolean host;
@@ -43,10 +43,10 @@ public class ParticipantEntity {
     protected ParticipantEntity() {
     }
 
-    public ParticipantEntity(SessionEntity session, String nickname, String reconnectToken, boolean host) {
+    public ParticipantEntity(SessionEntity session, String nickname, String participantToken, boolean host) {
         this.session = session;
         this.nickname = nickname;
-        this.reconnectToken = reconnectToken;
+        this.participantToken = participantToken;
         this.host = host;
     }
 

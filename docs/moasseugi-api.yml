@@ -5,7 +5,7 @@ info:
   description: |-
     독립 작성·익명 평가·평가 분포·최종 채택을 지원하는 최소 API 계약입니다.
     계정·JWT 없이 안건 생성/참가 시 랜덤 키를 발급합니다. 참가자와 진행자 확인에는 X-Participant-Token 하나를 사용합니다. 키 만료·복구는 없습니다.
-    GET 안건 조회는 키가 선택 사항이며, 키 없이 조회하면 비참가자 viewer입니다. 공개 결과 조회는 키가 필요 없습니다.
+    안건 정보와 공개 결과 조회는 참가 키가 필요 없습니다. 참가자 식별과 진행자 권한은 해당 행동의 API에서 확인합니다.
     단계는 WRITING → EVALUATING → RESULT이며 진행자가 수동 전환합니다. 자동 마감·스케줄러·되돌리기 없음. 채택 후에도 RESULT입니다.
     아이디어는 참가자당 1개. 작성 중 다른 아이디어는 숨기며 삭제 없음. 평가 클릭 시 저장하고 자기 아이디어 평가·중간 집계 공개는 금지합니다.
     아이디어 0개면 평가 시작 거부. 평가 0건이면 아이디어는 표시하고 분포 대신 평가 없음 안내. 채택 가능.
@@ -58,12 +58,9 @@ paths:
       tags:
       - Session
       summary: 안건 조회
-      description: 공유 링크로 현재 안건과 단계를 조회합니다. 키 없이 조회하면 viewer는 비참가자입니다. X-Participant-Token을 보내면 해당 안건의 현재 참가자를 확인합니다.
-        잘못된 키를 보낸 경우 401입니다.
+      description: 공유 링크로 안건 내용·현재 단계·채택 아이디어 ID를 공개 조회합니다. 참가 키와 참가자 정보는 사용하지 않습니다.
       operationId: getSession
-      security:
-      - {}
-      - participantToken: []
+      security: []
       responses:
         '200':
           description: 성공
@@ -71,8 +68,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -178,7 +173,7 @@ paths:
       tags:
       - Idea
       summary: 내 아이디어 조회
-      description: 현재 참가자가 저장한 아이디어 0~1개를 반환합니다. 기존 경로와 operationId를 유지합니다. 다른 참가자의 아이디어는 포함하지 않습니다.
+      description: 참가 키로 확인한 참가자의 아이디어 하나를 반환하며 아직 저장하지 않았으면 null입니다. 기존 경로와 operationId를 유지합니다. 다른 참가자의 아이디어는 포함하지 않습니다.
       operationId: getMyIdeas
       security:
       - participantToken: []
@@ -188,10 +183,10 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Idea'
-                maxItems: 1
+                type: object
+                nullable: true
+                allOf:
+                - $ref: '#/components/schemas/Idea'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -428,13 +423,13 @@ components:
       required:
       - session
       - participant
-      - reconnectToken
+      - participantToken
       properties:
         session:
           $ref: '#/components/schemas/SessionDetail'
         participant:
           $ref: '#/components/schemas/ParticipantSummary'
-        reconnectToken:
+        participantToken:
           type: string
           description: 진행자 참가 키. 브라우저에 보관하고 공유 URL·QR에 넣지 않습니다.
     SessionDetail:
@@ -445,7 +440,6 @@ components:
       - description
       - status
       - selectedIdeaId
-      - viewer
       properties:
         id:
           type: string
@@ -461,28 +455,6 @@ components:
           type: string
           format: uuid
           nullable: true
-        viewer:
-          $ref: '#/components/schemas/SessionViewer'
-    SessionViewer:
-      type: object
-      required:
-      - isHost
-      - isParticipant
-      - participantId
-      - nickname
-      properties:
-        isHost:
-          type: boolean
-        isParticipant:
-          type: boolean
-        participantId:
-          type: string
-          format: uuid
-          nullable: true
-        nickname:
-          type: string
-          nullable: true
-      description: 키 없이 조회하면 false/false/null/null. 진행자는 참가자이기도 합니다.
     JoinSessionRequest:
       type: object
       required:
@@ -497,11 +469,11 @@ components:
       type: object
       required:
       - participant
-      - reconnectToken
+      - participantToken
       properties:
         participant:
           $ref: '#/components/schemas/ParticipantSummary'
-        reconnectToken:
+        participantToken:
           type: string
           description: 안건별 랜덤 참가 키. 만료·복구 없음.
     ParticipantSummary:

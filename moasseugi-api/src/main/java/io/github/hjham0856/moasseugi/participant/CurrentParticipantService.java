@@ -22,7 +22,7 @@ public class CurrentParticipantService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "참가자 키가 필요합니다.");
         }
 
-        return participantRepository.findBySession_IdAndReconnectToken(sessionId, participantToken)
+        return participantRepository.findBySession_IdAndParticipantToken(sessionId, participantToken)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED, "유효하지 않은 참가자 키입니다."));
     }

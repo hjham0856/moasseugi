@@ -23,6 +23,9 @@ public class SessionEntity {
     @Column(columnDefinition = "text")
     private String description;
 
+    @Column(name = "selected_idea_id")
+    private UUID selectedIdeaId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private SessionStatus status = SessionStatus.WRITING;
@@ -46,6 +49,10 @@ public class SessionEntity {
 
     public String getDescription() {
         return description;
+    }
+
+    public UUID getSelectedIdeaId() {
+        return selectedIdeaId;
     }
 
     public SessionStatus getStatus() {
