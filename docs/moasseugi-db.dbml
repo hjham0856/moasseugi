@@ -30,7 +30,7 @@ Table sessions {
 Table participants {
   id uuid [pk]
   session_id uuid [not null]
-  nickname varchar(30) [not null, note: '같은 안건에서 중복 금지. 공백·대소문자 비교 방식은 구현 때 확인']
+  nickname varchar(30) [not null, note: '같은 안건에서 중복 금지. 앞뒤 공백 제거 후 대소문자 구분, 내부 공백 유지']
   participant_token varchar(255) [not null, unique, note: '안건별 랜덤 참가 키. 생성자에게도 발급. 만료·복구 정책 없음']
   is_host boolean [not null, default: false]
   indexes {
@@ -41,7 +41,7 @@ Table participants {
   신규 참가는 WRITING에서만 가능하며 기존 참가자는 이후 단계에도 접근한다.
   키가 해당 안건의 참가자 키인지 확인한다. 닉네임이나 admin URL 값으로 소유자·권한을 판정하지 않는다.
   키 분실 시 기록 복구·이전 없음. JWT·user_id·24시간 만료 컬럼은 지금 필요하지 않다.
-  닉네임의 비교 정책 확정 후 필요하면 정규화용 컬럼/제약을 맞춘다.
+  닉네임은 앞뒤 공백을 제거해 저장하며 같은 안건 (session_id, nickname) UNIQUE로 중복을 금지한다. 대소문자를 구분하고 내부 공백은 유지하므로 별도 정규화 컬럼은 두지 않는다.
   '''
 }
 
@@ -80,4 +80,4 @@ Ref: evaluations.idea_id > ideas.id
 Ref: sessions.selected_idea_id > ideas.id
 
 // 공통 BaseEntity·자동 감사 시각·회원 테이블은 현재 범위에 없다.
-// 닉네임 비교 방식과 PostgreSQL의 CHECK(value IN (-1,0,1)) 등 제약 적용은 구현/전환 때 검증한다.
+// PostgreSQL의 CHECK(value IN (-1,0,1)) 등 제약 적용은 구현/전환 때 검증한다.
