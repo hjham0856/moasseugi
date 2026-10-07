@@ -61,4 +61,6 @@ M3에서 실제 평가를 확인할 수 있도록 수동 단계 전환 #10을 �
 
 Security·JWT·OpenAPI 생성기 설정은 #1에서, 공통 오류코드·BusinessException·BaseEntity와 JPA 시간 자동 기록은 #2에서 제거했다. 공통 오류 응답은 HTTP 상태와 `{message}`만 제공한다.
 
+현재 작업 브랜치에서는 #7의 내 아이디어 조회·저장·수정을 구현했다. 키로 찾은 참가자의 단일 아이디어만 처리하며 WRITING에서만 저장·수정한다. 저장 전 조회는 JSON null이다. H2 기반 API 테스트와 DB UNIQUE 위반 검증을 포함한 `sh gradlew build`가 통과했다. 실제 화면 연결·수동 단계 전환 연동·PostgreSQL 검증은 후속 범위이며, 검토 순서는 `implementation-review.md`에 정리한다.
+
 개정 전 개요 PDF는 `archive/moasseugi-overview-before-simplification.pdf`에 보관한다. 현재 요구사항은 이 문서와 API·DB·프론트 설계를 따른다.
