@@ -63,4 +63,6 @@ Security·JWT·OpenAPI 생성기 설정은 #1에서, 공통 오류코드·Busine
 
 현재 작업 브랜치에서는 #7의 내 아이디어 조회·저장·수정을 구현했다. 키로 찾은 참가자의 단일 아이디어만 처리하며 WRITING에서만 저장·수정한다. 저장 전 조회는 JSON null이다. H2 기반 API 테스트와 DB UNIQUE 위반 검증을 포함한 `sh gradlew build`가 통과했다. 실제 화면 연결·수동 단계 전환 연동·PostgreSQL 검증은 후속 범위이며, 검토 순서는 `implementation-review.md`에 정리한다.
 
+현재 작업 브랜치에서는 #10의 진행자 수동 단계 전환 API를 구현했다. 작성 중 아이디어가 하나 이상 있을 때만 평가를 시작하고, 평가가 없어도 결과를 공개할 수 있다. 전환은 WRITING → EVALUATING → RESULT 순서에 한정되며 공개 안건 조회가 저장된 현재 단계를 반환한다. H2 MockMvc 테스트와 `sh gradlew build`로 전환 성공·명시된 거부 조건·저장 상태를 확인한다. 화면의 전환 조작과 실제 평가 흐름 연결은 M3의 #16에서 이어간다.
+
 개정 전 개요 PDF는 `archive/moasseugi-overview-before-simplification.pdf`에 보관한다. 현재 요구사항은 이 문서와 API·DB·프론트 설계를 따른다.
