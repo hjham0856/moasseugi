@@ -1,5 +1,7 @@
 package io.github.hjham0856.moasseugi.session;
 
+import io.github.hjham0856.moasseugi.idea.IdeaRepository;
+import io.github.hjham0856.moasseugi.participant.CurrentParticipantService;
 import io.github.hjham0856.moasseugi.participant.ParticipantEntity;
 import io.github.hjham0856.moasseugi.participant.ParticipantRepository;
 import io.github.hjham0856.moasseugi.participant.ParticipantService;
@@ -16,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.UUID;
 
 /**
- * 안건과 생성자의 진행자 참가 기록을 함께 만들고, 안건 공개 정보를 조회한다.
+ * 안건과 생성자의 참가 기록을 함께 만들고, 공개 정보 조회와 진행자 단계 전환을 처리한다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -25,15 +27,21 @@ public class SessionService {
     private final SessionRepository sessionRepository;
     private final ParticipantRepository participantRepository;
     private final ParticipantTokenGenerator participantTokenGenerator;
+    private final IdeaRepository ideaRepository;
+    private final CurrentParticipantService currentParticipantService;
 
     public SessionService(
             SessionRepository sessionRepository,
             ParticipantRepository participantRepository,
-            ParticipantTokenGenerator participantTokenGenerator
+            ParticipantTokenGenerator participantTokenGenerator,
+            IdeaRepository ideaRepository,
+            CurrentParticipantService currentParticipantService
     ) {
         this.sessionRepository = sessionRepository;
         this.participantRepository = participantRepository;
         this.participantTokenGenerator = participantTokenGenerator;
+        this.ideaRepository = ideaRepository;
+        this.currentParticipantService = currentParticipantService;
     }
 
     /**
@@ -67,6 +75,53 @@ public class SessionService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "안건을 찾을 수 없습니다."));
 
         return toDetail(session);
+    }
+
+    /**
+     * 진행자가 아이디어가 하나 이상 있는 작성 안건을 평가 단계로 전환한다.
+     *
+     * @throws ResponseStatusException 안건이 없으면 404, 키가 유효하지 않으면 401,
+     *         진행자가 아니면 403, 현재 단계가 WRITING이 아니거나 아이디어가 없으면 409
+     */
+    @Transactional
+    public Detail closeWriting(UUID sessionId, String participantToken) {
+        SessionEntity session = requireSession(sessionId);
+        currentParticipantService.requireHost(sessionId, participantToken);
+        requireStatus(session, SessionStatus.WRITING);
+
+        if (!ideaRepository.existsByParticipant_Session_Id(sessionId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "등록된 아이디어가 없습니다.");
+        }
+
+        session.advanceStatus();
+        return toDetail(session);
+    }
+
+    /**
+     * 진행자가 평가 중인 안건을 결과 단계로 전환한다. 평가가 없어도 전환할 수 있다.
+     *
+     * @throws ResponseStatusException 안건이 없으면 404, 키가 유효하지 않으면 401,
+     *         진행자가 아니면 403, 현재 단계가 EVALUATING이 아니면 409
+     */
+    @Transactional
+    public Detail closeEvaluation(UUID sessionId, String participantToken) {
+        SessionEntity session = requireSession(sessionId);
+        currentParticipantService.requireHost(sessionId, participantToken);
+        requireStatus(session, SessionStatus.EVALUATING);
+
+        session.advanceStatus();
+        return toDetail(session);
+    }
+
+    private SessionEntity requireSession(UUID sessionId) {
+        return sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "안건을 찾을 수 없습니다."));
+    }
+
+    private void requireStatus(SessionEntity session, SessionStatus expectedStatus) {
+        if (session.getStatus() != expectedStatus) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "현재 단계에서 수행할 수 없습니다.");
+        }
     }
 
     private Detail toDetail(SessionEntity session) {
