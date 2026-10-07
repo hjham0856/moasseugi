@@ -35,6 +35,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * 실제 저장소와 HTTP 응답으로 아이디어 소유권·저장 조건·참가자당 하나의 제약을 확인한다.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class IdeaControllerTest {
@@ -59,6 +62,7 @@ class IdeaControllerTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // 테스트 사이의 기록을 분리하며 외래 키 의존 순서대로 정리한다.
     @BeforeEach
     void clearStoredIdeas() {
         ideaRepository.deleteAll();
@@ -192,6 +196,7 @@ class IdeaControllerTest {
             }
             cause = cause.getCause();
         }
+
         assertNotNull(violation);
         assertTrue(violation.getConstraintName().toLowerCase(Locale.ROOT).contains("uk_idea_participant"));
         assertEquals(1, ideaRepository.count());
@@ -203,6 +208,7 @@ class IdeaControllerTest {
                         .content("{\"title\":\"회의 안건\",\"description\":null,\"nickname\":\"진행자\"}"))
                 .andExpect(status().isCreated())
                 .andReturn();
+
         return objectMapper.readTree(result.getResponse().getContentAsString())
                 .path("session").path("id").asText();
     }
@@ -214,6 +220,7 @@ class IdeaControllerTest {
                         .content(objectMapper.writeValueAsString(java.util.Map.of("content", content))))
                 .andExpect(status().isOk())
                 .andReturn();
+
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }
 
@@ -222,6 +229,7 @@ class IdeaControllerTest {
                         .header("X-Participant-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
+
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }
 }

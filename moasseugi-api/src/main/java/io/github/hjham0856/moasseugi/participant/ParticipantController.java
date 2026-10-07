@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * 신규 참가와 진행자 전용 참가자 목록 API를 제공한다.
+ */
 @RestController
 @RequestMapping("/sessions/{sessionId}/participants")
 public class ParticipantController {

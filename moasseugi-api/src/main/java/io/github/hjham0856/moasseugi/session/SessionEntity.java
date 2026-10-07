@@ -9,6 +9,9 @@ import jakarta.persistence.Table;
 
 import java.util.UUID;
 
+/**
+ * 회의의 한 안건을 저장한다. 새 안건은 작성 단계이며 채택 아이디어가 없다.
+ */
 @Entity
 @Table(name = "sessions")
 public class SessionEntity {
@@ -33,6 +36,9 @@ public class SessionEntity {
     protected SessionEntity() {
     }
 
+    /**
+     * 작성 단계의 새 안건을 만든다. 생성자의 참가 기록은 별도로 함께 저장해야 한다.
+     */
     public SessionEntity(String title, String description) {
         this.id = UUID.randomUUID();
         this.title = title;

@@ -14,6 +14,9 @@ import jakarta.persistence.UniqueConstraint;
 
 import java.util.UUID;
 
+/**
+ * 한 안건의 참가 신원이다. 생성자도 참가자로 저장하며 진행자 역할을 함께 부여한다.
+ */
 @Entity
 @Table(name = "participants", uniqueConstraints = {
         @UniqueConstraint(name = "uk_participant_token", columnNames = "participant_token"),
@@ -43,6 +46,10 @@ public class ParticipantEntity {
     protected ParticipantEntity() {
     }
 
+    /**
+     * 참가 기록을 만든다. nickname은 공통 정책으로 정규화된 값이어야 한다.
+     * host는 안건 생성자에게만 true를 전달한다.
+     */
     public ParticipantEntity(SessionEntity session, String nickname, String participantToken, boolean host) {
         this.session = session;
         this.nickname = nickname;

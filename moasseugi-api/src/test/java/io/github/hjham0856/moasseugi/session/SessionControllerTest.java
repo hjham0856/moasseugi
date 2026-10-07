@@ -25,6 +25,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * 안건·진행자의 동시 저장과 참가 정보 없는 공개 조회를 확인한다.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class SessionControllerTest {
@@ -43,6 +46,7 @@ class SessionControllerTest {
     @MockitoBean
     private ParticipantTokenGenerator participantTokenGenerator;
 
+    // 테스트 사이의 기록을 분리하며 외래 키 의존 순서대로 정리한다.
     @BeforeEach
     void clearStoredSessions() {
         participantRepository.deleteAll();

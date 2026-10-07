@@ -15,6 +15,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
+/**
+ * 안건과 생성자의 진행자 참가 기록을 함께 만들고, 안건 공개 정보를 조회한다.
+ */
 @Service
 @Transactional(readOnly = true)
 public class SessionService {
@@ -33,12 +36,20 @@ public class SessionService {
         this.participantTokenGenerator = participantTokenGenerator;
     }
 
+    /**
+     * 작성 단계의 안건과 진행자를 하나의 트랜잭션으로 생성하고 참가 키를 반환한다.
+     * 진행자 저장에 실패하면 안건도 남기지 않는다.
+     *
+     * @throws ResponseStatusException 닉네임이 없거나 정규화 후 30자를 넘으면 400
+     */
     @Transactional
     public CreateResponse createSession(CreateRequest request) {
-        // 진행자 닉네임도 신규 참가와 같은 확정 정책(앞뒤 공백 제거·대소문자 구분)으로 정규화한다.
+        // 생성자와 신규 참가자에게 같은 닉네임 규칙을 적용한다.
         String nickname = ParticipantService.normalizeNickname(request.nickname());
+
         SessionEntity session = sessionRepository.save(
                 new SessionEntity(request.title(), request.description()));
+
         String participantToken = participantTokenGenerator.generate();
         ParticipantEntity host = participantRepository.save(
                 new ParticipantEntity(session, nickname, participantToken, true));
@@ -46,9 +57,15 @@ public class SessionService {
         return new CreateResponse(toDetail(session), toSummary(host), participantToken);
     }
 
+    /**
+     * 참가 여부와 관계없이 안건 공개 정보를 반환한다. 참가 신원이나 키는 포함하지 않는다.
+     *
+     * @throws ResponseStatusException 안건이 없으면 404
+     */
     public Detail getSession(UUID sessionId) {
         SessionEntity session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "안건을 찾을 수 없습니다."));
+
         return toDetail(session);
     }
 

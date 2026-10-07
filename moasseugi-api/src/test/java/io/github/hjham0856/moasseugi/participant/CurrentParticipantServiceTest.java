@@ -15,6 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * 안건과 참가 키의 조합으로 신원을 찾고, 진행자 권한을 구분하는지 확인한다.
+ */
 @SpringBootTest
 @Transactional
 class CurrentParticipantServiceTest {

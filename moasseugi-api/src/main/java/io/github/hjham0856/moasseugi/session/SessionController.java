@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+/**
+ * 계정 없는 안건 생성과 참가 키가 필요 없는 공개 조회 API를 제공한다.
+ */
 @RestController
 @RequestMapping("/sessions")
 public class SessionController {

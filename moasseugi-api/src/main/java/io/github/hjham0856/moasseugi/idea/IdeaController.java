@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 import java.util.Optional;
 
+/**
+ * 참가 키로 본인의 아이디어만 저장·조회하는 API를 제공한다.
+ */
 @RestController
 @RequestMapping("/sessions/{sessionId}/ideas")
 public class IdeaController {
@@ -35,16 +38,21 @@ public class IdeaController {
         return ideaService.putIdea(sessionId, participantToken, request);
     }
 
+    /**
+     * 저장 전에는 빈 HTTP 본문이 아닌 JSON null을 반환한다.
+     */
     @GetMapping("/me")
     public ResponseEntity<?> getMyIdea(
             @PathVariable UUID sessionId,
             @RequestHeader(value = "X-Participant-Token", required = false) String participantToken
     ) {
         Optional<Response> idea = ideaService.getMyIdea(sessionId, participantToken);
+
         if (idea.isEmpty()) {
             // 자바 null 반환은 빈 응답이 되므로 계약의 JSON null을 그대로 보낸다.
             return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body("null");
         }
+
         return ResponseEntity.ok(idea.get());
     }
 }

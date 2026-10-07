@@ -26,6 +26,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * 신규 참가 정책과 진행자 전용 목록의 접근 권한을 HTTP 요청과 저장 기록으로 확인한다.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class ParticipantControllerTest {
@@ -50,6 +53,7 @@ class ParticipantControllerTest {
     @MockitoBean
     private ParticipantTokenGenerator participantTokenGenerator;
 
+    // 테스트 사이의 기록을 분리하며 외래 키 의존 순서대로 정리한다.
     @BeforeEach
     void clearStoredSessions() {
         participantRepository.deleteAll();
@@ -112,6 +116,7 @@ class ParticipantControllerTest {
             assertEquals(3, participant.size());
             nicknames.add(participant.path("nickname").asText());
         }
+
         assertEquals(Set.of("Alex", "alex"), nicknames);
 
         mockMvc.perform(post("/sessions/{sessionId}/participants", otherSessionId)
