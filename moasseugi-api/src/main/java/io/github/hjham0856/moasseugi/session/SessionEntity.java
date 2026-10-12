@@ -64,4 +64,18 @@ public class SessionEntity {
     public SessionStatus getStatus() {
         return status;
     }
+
+    /**
+     * 안건을 WRITING → EVALUATING → RESULT 순서로만 이동시킨다.
+     * 진행 권한과 전환 조건은 호출자가 먼저 확인해야 한다.
+     *
+     * @throws IllegalStateException 이미 결과 단계인 경우
+     */
+    public void advanceStatus() {
+        status = switch (status) {
+            case WRITING -> SessionStatus.EVALUATING;
+            case EVALUATING -> SessionStatus.RESULT;
+            case RESULT -> throw new IllegalStateException("결과 단계에서는 더 진행할 수 없습니다.");
+        };
+    }
 }

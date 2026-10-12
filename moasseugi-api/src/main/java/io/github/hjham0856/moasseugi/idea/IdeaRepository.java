@@ -11,6 +11,8 @@ import java.util.UUID;
  */
 public interface IdeaRepository extends JpaRepository<IdeaEntity, UUID> {
 
+    boolean existsByParticipant_Session_Id(UUID sessionId);
+
     Optional<IdeaEntity> findByParticipant_Id(UUID participantId);
 
     List<IdeaEntity> findByParticipant_Session_IdAndParticipant_IdNot(UUID sessionId, UUID participantId);

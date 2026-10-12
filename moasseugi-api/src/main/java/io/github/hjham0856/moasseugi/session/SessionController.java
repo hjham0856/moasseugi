@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * 계정 없는 안건 생성과 참가 키가 필요 없는 공개 조회 API를 제공한다.
+ * 안건 생성·공개 조회와 진행자 수동 단계 전환 API를 제공한다.
  */
 @RestController
 @RequestMapping("/sessions")
@@ -37,5 +38,21 @@ public class SessionController {
     @GetMapping("/{sessionId}")
     public Detail getSession(@PathVariable UUID sessionId) {
         return sessionService.getSession(sessionId);
+    }
+
+    @PostMapping("/{sessionId}/close-writing")
+    public Detail closeWriting(
+            @PathVariable UUID sessionId,
+            @RequestHeader(value = "X-Participant-Token", required = false) String participantToken
+    ) {
+        return sessionService.closeWriting(sessionId, participantToken);
+    }
+
+    @PostMapping("/{sessionId}/close-evaluation")
+    public Detail closeEvaluation(
+            @PathVariable UUID sessionId,
+            @RequestHeader(value = "X-Participant-Token", required = false) String participantToken
+    ) {
+        return sessionService.closeEvaluation(sessionId, participantToken);
     }
 }
