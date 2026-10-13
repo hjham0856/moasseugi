@@ -1,0 +1,186 @@
+/* 전역 기본 스타일: 리셋, 본문, 폼 요소, 버튼, 링크. 색과 글꼴은 tokens.css만 참조한다. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-m);
+  line-height: var(--leading-body);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+h1,
+h2,
+h3,
+p,
+ol,
+ul {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  line-height: var(--leading-tight);
+  font-weight: 700;
+}
+
+p {
+  max-width: var(--measure);
+}
+
+ol,
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: var(--color-accent-ink);
+  text-decoration-thickness: var(--rule-width);
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  color: var(--color-ink);
+}
+
+/* 포커스 링은 즉시 나타나야 하므로 transition을 걸지 않는다. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-marker);
+  color: var(--color-ink);
+}
+
+/* 폼 */
+label {
+  display: block;
+  font-weight: 500;
+  font-size: var(--text-s);
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--color-slip);
+  color: var(--color-ink);
+  font: inherit;
+  border: var(--rule-width) solid var(--color-ink-3);
+  border-radius: var(--radius-s);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 7rem;
+}
+
+input:hover,
+textarea:hover {
+  border-color: var(--color-ink);
+}
+
+input[aria-invalid='true'],
+textarea[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+
+input:disabled,
+textarea:disabled {
+  color: var(--color-ink-3);
+  background: var(--color-paper-2);
+  cursor: not-allowed;
+}
+
+/* 버튼: 주 행동은 강조색 종이쪽지, 보조 행동은 .button--quiet */
+.button {
+  display: inline-block;
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-accent);
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  border: var(--rule-width) solid var(--color-ink);
+  border-radius: var(--radius-s);
+  box-shadow: var(--offset-shadow-ink);
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.button:hover {
+  color: var(--color-ink);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--offset-shadow-ink-lift);
+}
+
+.button:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--offset-shadow-ink-press);
+}
+
+.button:disabled {
+  background: var(--color-paper-2);
+  color: var(--color-ink-3);
+  border-color: var(--color-ink-3);
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+.button--quiet {
+  background: var(--color-slip);
+  padding-inline: var(--space-4);
+}
+
+/* 종이쪽지 면: 한 겹의 테두리와 어긋난 그림자만 쓰고 안에 다시 카드를 넣지 않는다. */
+.slip {
+  background: var(--color-slip);
+  border: var(--rule-width) solid var(--color-ink);
+  border-radius: var(--radius-m);
+  box-shadow: var(--offset-shadow);
+}
+
+.field-error {
+  margin-top: var(--space-2);
+  color: var(--color-error);
+  font-size: var(--text-s);
+  font-weight: 500;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
