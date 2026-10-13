@@ -15,4 +15,6 @@ public interface EvaluationRepository extends JpaRepository<EvaluationEntity, UU
     Optional<EvaluationEntity> findByParticipant_IdAndIdea_Id(UUID participantId, UUID ideaId);
 
     List<EvaluationEntity> findByParticipant_IdAndIdea_IdIn(UUID participantId, Collection<UUID> ideaIds);
+
+    List<EvaluationEntity> findByIdea_Participant_Session_Id(UUID sessionId);
 }

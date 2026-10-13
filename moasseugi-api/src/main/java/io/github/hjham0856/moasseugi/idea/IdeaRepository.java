@@ -19,5 +19,7 @@ public interface IdeaRepository extends JpaRepository<IdeaEntity, UUID> {
 
     Optional<IdeaEntity> findByIdAndParticipant_Session_Id(UUID id, UUID sessionId);
 
+    List<IdeaEntity> findByParticipant_Session_IdOrderByCreatedAtAscIdAsc(UUID sessionId);
+
     boolean existsByIdAndParticipant_Id(UUID id, UUID participantId);
 }

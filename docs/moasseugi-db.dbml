@@ -49,6 +49,7 @@ Table ideas {
   id uuid [pk]
   participant_id uuid [not null, unique, note: '참가자당 최대 1개. 같은 참가자의 저장 요청은 이 행을 갱신']
   content text [not null, note: '공백만 있는 내용 거부']
+  created_at timestamp [not null, note: '결과의 생성순 정렬 기준']
   Note: '''
   WRITING에서만 저장·수정, 삭제 API 없음. 소유자는 참가 키로 찾는다.
   소속 안건은 participant_id로 확인한다. 참가자당 1개는 DB UNIQUE로도 보장한다.
