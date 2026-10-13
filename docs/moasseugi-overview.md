@@ -57,7 +57,7 @@ M3에서 실제 평가를 확인할 수 있도록 수동 단계 전환 #10을 �
 
 ## 개발 환경과 현행 코드
 
-개발 중 H2 local(create-drop)를 사용한다. 서버 재시작 시 데이터는 사라진다. 개발 완료 마지막에 PostgreSQL로 전환하고 연결·스키마·제약·핵심 흐름을 확인한다.
+빠른 개발·기본 테스트는 H2 local(create-drop)를 사용하며 서버 재시작 시 데이터가 사라진다. 로컬 데이터 유지는 Compose의 PostgreSQL 17과 `local,postgres` 프로파일로 실행한다. 연결은 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`, 스키마는 Hibernate `ddl-auto: update`를 사용한다. 볼륨에 데이터가 남으며 컬럼 삭제·이름 변경은 자동 처리하지 않는다. H2 데이터 이관·배포 설정·마이그레이션 프레임워크는 없다. 실행·초기화 방법은 루트 `README.md`를 따른다.
 
 Security·JWT·OpenAPI 생성기 설정은 #1에서, 공통 오류코드·BusinessException·BaseEntity와 JPA 시간 자동 기록은 #2에서 제거했다. 공통 오류 응답은 HTTP 상태와 `{message}`만 제공한다.
 
@@ -76,5 +76,7 @@ Security·JWT·OpenAPI 생성기 설정은 #1에서, 공통 오류코드·Busine
 #17에서는 진행자 관리 화면(`/s/:sessionId/manage`)을 만들어 QR·링크 공유, 참가자 목록, 단계 전환 조작을 안건 화면에서 옮겨 왔다. 안건 화면의 결과 단계에는 평가 분포를 좋음·괜찮음·별로 막대와 인원수로 보여 주는 결과 목록을 두었고 진행자가 한 번 채택할 수 있다. 채택작에만 작성자 닉네임이 표시된다. 결과는 링크를 가진 누구나 조회하며, 채택 전까지는 3초 폴링을 이어 가 다른 브라우저가 채택을 확인한다.
 
 #18에서는 로컬 개발 환경의 연동 설정을 다시 확인하고 실행 방법을 루트 `README.md`에 정리했다. API context-path `/api`, 프론트 기본 API 주소 `http://localhost:8080/api`, `local` 프로파일의 `http://localhost:5173` CORS(GET·POST·PUT, `X-Participant-Token` 허용)가 서로 맞고, 공유 주소와 QR은 현재 웹 origin의 `/s/:sessionId`만 담아 참가 키를 포함하지 않음을 확인했다. 키 분실 시 복구 없음, 진행자 키 분실 시 관리 불가, H2 재시작 시 데이터 초기화를 현재 제한으로 문서화했고, Vite 기본 README와 기본 파비콘을 이 프로젝트용 설명과 SVG 파비콘으로 바꿨다. 배포·로그인·새 인프라는 범위 밖이며 PostgreSQL 전환은 #19에서 한다.
+
+#19에서는 Compose의 PostgreSQL 17과 `postgres` 프로파일을 추가하고 평가값 CHECK를 DB에 적용했다. H2와 PostgreSQL에서 기존 테스트 39개가 각각 통과했다. PostgreSQL의 UNIQUE·FK·CHECK 거부, 닉네임 비교 정책, curl 핵심 흐름과 무평가 채택, API 재시작 후 데이터 유지를 확인했다. 배포 프로파일은 만들지 않았으며 실행 명령·실제 제약 이름·검증 범위는 [PostgreSQL 검증 기록](postgresql-verification.md)에 정리했다.
 
 개정 전 개요 PDF는 `archive/moasseugi-overview-before-simplification.pdf`에 보관한다. 현재 요구사항은 이 문서와 API·DB·프론트 설계를 따른다.

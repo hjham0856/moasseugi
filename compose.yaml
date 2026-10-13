@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      # 로컬 개발 전용 값이며 배포용 비밀 정보가 아니다.
+      POSTGRES_DB: moasseugi
+      POSTGRES_USER: moasseugi
+      POSTGRES_PASSWORD: moasseugi
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moasseugi -d moasseugi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:

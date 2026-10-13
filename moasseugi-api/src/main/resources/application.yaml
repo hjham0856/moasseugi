@@ -2,7 +2,7 @@ spring:
   application:
     name: moasseugi-api
   profiles:
-    # 로컬 기본값. 배포 확정 시 application-prod.yaml 추가 후 실행 시 override
+    # 빠른 개발·테스트는 H2를 기본으로 사용하고 PostgreSQL은 local,postgres로 실행한다.
     active: local
 server:
   servlet:

@@ -39,9 +39,10 @@
 
 ## DB·프로파일
 
-- 개발은 기존 local 프로파일의 H2(create-drop). 재시작 시 개발 데이터가 사라진다.
-- 개발 완료 마지막 단계에 PostgreSQL로 전환한다. 연결·스키마·제약과 핵심 흐름을 PostgreSQL에서 확인한다.
-- 현행 `application-prod.yaml` 없음. PostgreSQL 연결과 비밀 설정 방식은 마지막 전환 작업에서 정한다. JWT 설정은 이번 범위 밖이다.
+- 빠른 개발·기본 테스트는 local 프로파일의 H2(create-drop). 재시작 시 개발 데이터가 사라지므로 PostgreSQL로 이관하지 않는다.
+- 로컬 PostgreSQL 17은 루트 `compose.yaml`로 실행한다. 호스트 포트는 5433이며 이름 있는 볼륨에 데이터를 유지한다. DB·사용자·비밀번호 `moasseugi`는 로컬 개발 전용이다.
+- `local,postgres` 순서로 활성화해 기존 CORS를 유지하고 PostgreSQL 연결을 덮어쓴다. `application-postgres.yaml`의 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD` 환경 변수로 연결을 바꾸며 실제 비밀은 커밋하지 않는다.
+- 스키마는 Hibernate `ddl-auto: update`로 적용한다. 컬럼 삭제·이름 변경과 기존 테이블의 CHECK 추가는 자동 반영을 전제하지 않고 실제 스키마를 확인한다. 마이그레이션 프레임워크·`application-prod.yaml`은 없다. JWT 설정은 이번 범위 밖이다.
 
 ## 작업 방식
 
@@ -61,4 +62,4 @@
 - 공용 스토어·컴포넌트는 화면 구현 중 실제 반복이 생기면 추출한다. 이를 위한 별도 선행 기반 작업은 두지 않는다.
 - #3까지 main 직행 방침 유지. 이후 브랜치 방식은 작업 시 확인. 커밋·push는 요청 범위에 맞게 진행한다.
 - `Closes #n`은 실제 완료한 이슈에만 사용한다. 문서 개정만으로 구현 이슈를 완료 처리하지 않는다.
-- 의미 있는 소유자·단계·저장 검증을 기능에 맞게 수행한다. 개발 중 H2 단일 프로파일, 프론트 vitest·E2E 도입 없음. 마지막 PostgreSQL 전환 때 DB 확인 추가.
+- 의미 있는 소유자·단계·저장 검증을 기능에 맞게 수행한다. 기본 H2 검증과 함께 DB 변경은 PostgreSQL에서도 확인한다. 프론트 vitest·E2E 도입 없음.
