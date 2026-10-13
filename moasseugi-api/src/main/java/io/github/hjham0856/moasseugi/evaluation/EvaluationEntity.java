@@ -2,6 +2,7 @@ package io.github.hjham0856.moasseugi.evaluation;
 
 import io.github.hjham0856.moasseugi.idea.IdeaEntity;
 import io.github.hjham0856.moasseugi.participant.ParticipantEntity;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -21,7 +22,9 @@ import java.util.UUID;
 @Entity
 @Table(name = "evaluations", uniqueConstraints = {
         @UniqueConstraint(name = "uk_evaluation_participant_idea", columnNames = {"participant_id", "idea_id"})
-})
+},
+        // API를 거치지 않은 저장도 제품의 세 가지 평가값만 허용한다.
+        check = @CheckConstraint(name = "ck_evaluation_value", constraint = "\"value\" in (-1, 0, 1)"))
 public class EvaluationEntity {
 
     @Id
