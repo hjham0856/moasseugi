@@ -1,6 +1,6 @@
 import { apiRequest } from './http'
 import {
-  getStoredParticipant,
+  requireParticipantToken,
   storeParticipant,
   type ParticipantSummary,
   type StoredParticipant,
@@ -62,14 +62,27 @@ export async function joinSession(
 
 /** 진행자 화면에서 키가 필요한 참가자 목록을 조회합니다. */
 export function getSessionParticipants(sessionId: string): Promise<ParticipantSummary[]> {
-  const participant = getStoredParticipant(sessionId)
-
-  if (!participant) {
-    throw new Error('이 안건의 참가 정보가 없습니다.')
-  }
-
   return apiRequest<ParticipantSummary[]>(
     `/sessions/${encodeURIComponent(sessionId)}/participants`,
-    { participantToken: participant.participantToken },
+    { participantToken: requireParticipantToken(sessionId) },
   )
+}
+
+/**
+ * 진행자가 작성을 마치고 평가를 시작합니다. 되돌릴 수 없습니다.
+ * 아이디어가 하나도 없으면 409와 안내 문구로 거부됩니다.
+ */
+export function closeWriting(sessionId: string): Promise<SessionDetail> {
+  return apiRequest<SessionDetail>(`/sessions/${encodeURIComponent(sessionId)}/close-writing`, {
+    method: 'POST',
+    participantToken: requireParticipantToken(sessionId),
+  })
+}
+
+/** 진행자가 평가를 마치고 결과 단계로 넘어갑니다. 되돌릴 수 없습니다. */
+export function closeEvaluation(sessionId: string): Promise<SessionDetail> {
+  return apiRequest<SessionDetail>(`/sessions/${encodeURIComponent(sessionId)}/close-evaluation`, {
+    method: 'POST',
+    participantToken: requireParticipantToken(sessionId),
+  })
 }
