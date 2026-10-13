@@ -7,7 +7,11 @@ import { createSessionQrDataUrl, createSessionShareUrl } from '../share/session-
  * 진행자가 참가자를 부르는 영역. QR과 링크에는 안건 주소만 담기며
  * 참가 키는 어디에도 포함되지 않는다.
  */
-const props = defineProps<{ sessionId: string }>()
+const props = defineProps<{
+  sessionId: string
+  /** 회의실에서 떨어져 있는 참가자도 스캔할 수 있도록 QR을 크게 보여준다. */
+  large?: boolean
+}>()
 
 const shareUrl = createSessionShareUrl(props.sessionId)
 const qrDataUrl = ref('')
@@ -39,7 +43,7 @@ async function copyUrl() {
     <h2 id="share-title" class="share__title">참가자 부르기</h2>
 
     <div class="share__body">
-      <div class="share__qr">
+      <div class="share__qr" :class="{ 'share__qr--large': large }">
         <img v-if="qrDataUrl" :src="qrDataUrl" alt="안건 참가 링크 QR 코드" width="176" height="176" />
       </div>
 
@@ -72,6 +76,12 @@ async function copyUrl() {
   width: 11rem;
   height: 11rem;
   background: var(--color-slip);
+}
+
+.share__qr--large {
+  width: min(100%, 18rem);
+  height: auto;
+  aspect-ratio: 1;
 }
 
 .share__qr img {

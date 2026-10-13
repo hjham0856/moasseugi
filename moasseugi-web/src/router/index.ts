@@ -15,6 +15,12 @@ const router = createRouter({
       name: 'session',
       component: () => import('../views/SessionView.vue'),
     },
+    {
+      // 진행자 전용 관리 화면. 참가자 화면과 분리해 일반 참가자가 진행 조작을 마주치지 않게 한다.
+      path: '/s/:sessionId/manage',
+      name: 'manage',
+      component: () => import('../views/ManageView.vue'),
+    },
   ],
   scrollBehavior: () => ({ top: 0 }),
 })

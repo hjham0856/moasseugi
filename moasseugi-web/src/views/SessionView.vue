@@ -1,19 +1,17 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
 import { ApiError } from '../api/http'
 import { getStoredParticipant, type StoredParticipant } from '../api/participant-storage'
 import {
-  closeEvaluation,
-  closeWriting,
   getSession,
   joinSession,
   type SessionDetail,
   type SessionStatus,
 } from '../api/sessions'
 import EvaluationPanel from '../components/EvaluationPanel.vue'
-import SharePanel from '../components/SharePanel.vue'
+import ResultPanel from '../components/ResultPanel.vue'
 import WritingPanel from '../components/WritingPanel.vue'
 
 /**
@@ -50,10 +48,6 @@ const POLL_INTERVAL_MS = 3000
 
 let pollTimer: ReturnType<typeof setInterval> | undefined
 let polling = false
-
-const transitionConfirm = ref<'closeWriting' | 'closeEvaluation' | null>(null)
-const transitioning = ref(false)
-const transitionError = ref('')
 
 const phaseIndex = computed(() =>
   PHASES.findIndex((phase) => phase.status === session.value?.status),
@@ -111,7 +105,7 @@ function stopPolling() {
 /**
  * 단계만 갱신한다. 화면의 나머지는 그대로 두므로 조회 때마다 로딩 표시가 깜빡이지 않는다.
  * 일시적인 실패는 다음 주기에 다시 시도하면 되므로 조용히 넘기고, 응답이 늦게 와서
- * 이미 다른 안건으로 이동한 뒤라면 버린다. 되돌릴 수 없는 마지막 단계에 닿으면 멈춘다.
+ * 이미 다른 안건으로 이동한 뒤라면 버린다. 채택이 끝나 더 바뀔 것이 없으면 멈춘다.
  */
 async function poll(id: string) {
   if (polling) {
@@ -126,7 +120,7 @@ async function poll(id: string) {
     if (id === sessionId.value && session.value) {
       session.value = detail
 
-      if (detail.status === 'RESULT') {
+      if (isFinal(detail)) {
         stopPolling()
       }
     }
@@ -137,15 +131,29 @@ async function poll(id: string) {
   }
 }
 
-/** 안건이 열려 있고 이 브라우저가 참가자일 때만 갱신한다. 안건이 바뀌면 이전 타이머를 정리하고 다시 시작한다. */
-watch(
-  [sessionId, () => session.value !== null && session.value.status !== 'RESULT', stored],
-  ([id, open, participant]) => {
-    stopPolling()
-    transitionConfirm.value = null
-    transitionError.value = ''
+/**
+ * 결과 단계에 들어서도 채택이 있기 전까지는 계속 조회한다. 진행자의 채택은 결과 단계 안에서
+ * 일어나므로 단계만 보고 멈추면 다른 브라우저가 채택을 영영 보지 못한다. 채택은 바뀌지 않아 그때 멈춘다.
+ */
+function isFinal(detail: SessionDetail): boolean {
+  return detail.status === 'RESULT' && detail.selectedIdeaId !== null
+}
 
-    if (open && participant) {
+/**
+ * 안건이 아직 바뀔 수 있고, 이 브라우저가 참가자이거나 결과를 보고 있을 때 갱신한다.
+ * 결과는 링크만 있으면 누구나 볼 수 있으므로 참가하지 않은 사람도 채택을 따라간다.
+ * 안건이 바뀌면 이전 타이머를 정리하고 다시 시작한다.
+ */
+watch(
+  [
+    sessionId,
+    () => session.value !== null && !isFinal(session.value),
+    () => stored.value !== null || session.value?.status === 'RESULT',
+  ],
+  ([id, open, watching]) => {
+    stopPolling()
+
+    if (open && watching) {
       pollTimer = setInterval(() => poll(id), POLL_INTERVAL_MS)
     }
   },
@@ -153,14 +161,6 @@ watch(
 )
 
 onUnmounted(stopPolling)
-
-watch(
-  () => session.value?.status,
-  () => {
-    transitionConfirm.value = null
-    transitionError.value = ''
-  },
-)
 
 /** 닉네임으로 참가한다. 실패하면 입력을 유지하고 서버 안내 문구를 보여준다. */
 async function join() {
@@ -183,41 +183,6 @@ async function join() {
     joining.value = false
   }
 }
-
-/**
- * 진행자가 단계를 넘긴다. 되돌릴 수 없어 화면에서 한 번 더 확인받은 뒤에만 호출한다.
- * 거부(예: 아이디어가 하나도 없는 평가 시작)는 서버 문구를 그대로 보여준다.
- */
-async function transition() {
-  const action = transitionConfirm.value
-
-  if (!action || transitioning.value) {
-    return
-  }
-
-  const id = sessionId.value
-
-  transitioning.value = true
-  transitionError.value = ''
-
-  try {
-    const detail = action === 'closeWriting' ? await closeWriting(id) : await closeEvaluation(id)
-
-    if (id === sessionId.value) {
-      session.value = detail
-      transitionConfirm.value = null
-    }
-  } catch (error) {
-    if (id === sessionId.value) {
-      transitionError.value =
-        error instanceof ApiError
-          ? error.message
-          : '서버에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.'
-    }
-  } finally {
-    transitioning.value = false
-  }
-}
 </script>
 
 <template>
@@ -237,6 +202,10 @@ async function transition() {
           <span class="member__name">{{ stored.participant.nickname }}님으로 참가 중</span>
           <span v-if="isHost" class="member__badge">진행자</span>
         </p>
+
+        <RouterLink v-if="isHost && session.status !== 'RESULT'" class="button manage-link" :to="`/s/${sessionId}/manage`">
+          진행 관리 · QR 공유
+        </RouterLink>
 
         <ol class="phases" aria-label="진행 단계">
           <li
@@ -262,54 +231,13 @@ async function transition() {
           :session-id="sessionId"
         />
 
-        <section v-else class="closed slip" aria-labelledby="result-title">
-          <h2 id="result-title" class="closed__title">결과 단계가 시작되었습니다</h2>
-          <p>작성과 평가가 끝나 더 이상 입력할 수 없습니다.</p>
-        </section>
-
-        <section
-          v-if="isHost && session.status !== 'RESULT'"
-          class="control"
-          aria-labelledby="control-title"
-        >
-          <h2 id="control-title" class="control__title">진행자 조작</h2>
-
-          <template v-if="transitionConfirm === null">
-            <button
-              type="button"
-              class="button button--quiet"
-              @click="transitionConfirm = session.status === 'WRITING' ? 'closeWriting' : 'closeEvaluation'"
-            >
-              {{ session.status === 'WRITING' ? '평가 시작' : '평가 종료' }}
-            </button>
-          </template>
-
-          <template v-else>
-            <p class="control__warning">
-              {{
-                transitionConfirm === 'closeWriting'
-                  ? '되돌릴 수 없습니다. 평가를 시작할까요?'
-                  : '되돌릴 수 없습니다. 평가를 끝내고 결과 단계로 넘어갈까요?'
-              }}
-            </p>
-
-            <div class="control__actions">
-              <button type="button" class="button" :disabled="transitioning" @click="transition">
-                {{ transitioning ? '전환하는 중…' : '확인' }}
-              </button>
-              <button
-                type="button"
-                class="button button--quiet"
-                :disabled="transitioning"
-                @click="transitionConfirm = null"
-              >
-                취소
-              </button>
-            </div>
-          </template>
-
-          <p v-if="transitionError" class="field-error" role="alert">{{ transitionError }}</p>
-        </section>
+        <ResultPanel
+          v-else
+          :key="sessionId"
+          :session-id="sessionId"
+          :is-host="isHost"
+          :selected-idea-id="session.selectedIdeaId"
+        />
       </template>
 
       <form v-else-if="session.status === 'WRITING'" class="join slip" @submit.prevent="join">
@@ -336,12 +264,19 @@ async function transition() {
         </button>
       </form>
 
+      <!-- 결과는 링크를 가진 누구에게나 공개되므로 참가하지 않았어도 볼 수 있다. -->
+      <ResultPanel
+        v-else-if="session.status === 'RESULT'"
+        :key="sessionId"
+        :session-id="sessionId"
+        :is-host="false"
+        :selected-idea-id="session.selectedIdeaId"
+      />
+
       <section v-else class="closed slip">
         <h2 class="closed__title">작성이 끝났습니다</h2>
         <p>작성 단계가 끝나 새로 참가할 수 없습니다.</p>
       </section>
-
-      <SharePanel v-if="isHost" :session-id="sessionId" />
     </template>
   </div>
 </template>
@@ -437,25 +372,8 @@ async function transition() {
   font-size: var(--text-xs);
 }
 
-.control {
-  display: grid;
-  gap: var(--space-3);
-  justify-items: start;
-}
-
-.control__title {
-  font-size: var(--text-s);
-  color: var(--color-ink-2);
-}
-
-.control__warning {
-  font-weight: 500;
-}
-
-.control__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
+.manage-link {
+  justify-self: start;
 }
 
 .join__title,
