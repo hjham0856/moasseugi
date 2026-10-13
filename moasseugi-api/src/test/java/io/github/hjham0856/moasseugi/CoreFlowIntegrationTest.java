@@ -39,7 +39,6 @@ class CoreFlowIntegrationTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // 채택한 아이디어를 가리키는 안건 참조를 먼저 풀어 외래 키 순서를 지킨다.
     @BeforeEach
     void clearStoredRecords() {
         clearRecords();
@@ -153,6 +152,7 @@ class CoreFlowIntegrationTest {
         assertEquals(1, jdbcTemplate.queryForObject("SELECT \"value\" FROM evaluations", Integer.class));
     }
 
+    // 채택한 아이디어를 가리키는 안건 참조를 먼저 풀어 외래 키 순서를 지킨다.
     private void clearRecords() {
         jdbcTemplate.update("UPDATE sessions SET selected_idea_id = NULL");
         jdbcTemplate.update("DELETE FROM evaluations");
