@@ -82,5 +82,5 @@ Ref: evaluations.idea_id > ideas.id
 Ref: sessions.selected_idea_id > ideas.id
 
 // 공통 BaseEntity·자동 감사 시각·회원 테이블은 현재 범위에 없다.
-// EvaluationEntity의 @Check로 ck_evaluation_value CHECK("value" IN (-1,0,1))를 적용한다.
+// EvaluationEntity의 @Table(check = @CheckConstraint)로 ck_evaluation_value CHECK("value" IN (-1,0,1))를 적용한다.
 // 기존 테이블에 CHECK가 추가되는지는 ddl-auto:update에 맡기지 않고 실제 스키마를 확인한다.

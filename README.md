@@ -105,4 +105,3 @@ npm run build
 - [docs/moasseugi-api.yml](docs/moasseugi-api.yml) — API 계약(OpenAPI)
 - [docs/moasseugi-frontend.md](docs/moasseugi-frontend.md) — 프론트 설계
 - [docs/moasseugi-db.dbml](docs/moasseugi-db.dbml) — DB 설계
-- [docs/postgresql-verification.md](docs/postgresql-verification.md) — #19의 실제 명령·검증 결과와 검토 순서

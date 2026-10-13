@@ -2,6 +2,7 @@ package io.github.hjham0856.moasseugi.evaluation;
 
 import io.github.hjham0856.moasseugi.idea.IdeaEntity;
 import io.github.hjham0856.moasseugi.participant.ParticipantEntity;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -12,7 +13,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import org.hibernate.annotations.Check;
 
 import java.util.UUID;
 
@@ -20,11 +20,11 @@ import java.util.UUID;
  * 한 참가자가 한 아이디어에 남긴 현재 평가를 저장한다.
  */
 @Entity
-// API를 거치지 않은 저장도 제품의 세 가지 평가값만 허용한다.
-@Check(name = "ck_evaluation_value", constraints = "\"value\" in (-1, 0, 1)")
 @Table(name = "evaluations", uniqueConstraints = {
         @UniqueConstraint(name = "uk_evaluation_participant_idea", columnNames = {"participant_id", "idea_id"})
-})
+},
+        // API를 거치지 않은 저장도 제품의 세 가지 평가값만 허용한다.
+        check = @CheckConstraint(name = "ck_evaluation_value", constraint = "\"value\" in (-1, 0, 1)"))
 public class EvaluationEntity {
 
     @Id

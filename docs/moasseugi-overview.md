@@ -77,6 +77,6 @@ Security·JWT·OpenAPI 생성기 설정은 #1에서, 공통 오류코드·Busine
 
 #18에서는 로컬 개발 환경의 연동 설정을 다시 확인하고 실행 방법을 루트 `README.md`에 정리했다. API context-path `/api`, 프론트 기본 API 주소 `http://localhost:8080/api`, `local` 프로파일의 `http://localhost:5173` CORS(GET·POST·PUT, `X-Participant-Token` 허용)가 서로 맞고, 공유 주소와 QR은 현재 웹 origin의 `/s/:sessionId`만 담아 참가 키를 포함하지 않음을 확인했다. 키 분실 시 복구 없음, 진행자 키 분실 시 관리 불가, H2 재시작 시 데이터 초기화를 현재 제한으로 문서화했고, Vite 기본 README와 기본 파비콘을 이 프로젝트용 설명과 SVG 파비콘으로 바꿨다. 배포·로그인·새 인프라는 범위 밖이며 PostgreSQL 전환은 #19에서 한다.
 
-#19에서는 Compose의 PostgreSQL 17과 `postgres` 프로파일을 추가하고 평가값 CHECK를 DB에 적용했다. H2와 PostgreSQL에서 기존 테스트 39개가 각각 통과했다. PostgreSQL의 UNIQUE·FK·CHECK 거부, 닉네임 비교 정책, curl 핵심 흐름과 무평가 채택, API 재시작 후 데이터 유지를 확인했다. 배포 프로파일은 만들지 않았으며 실행 명령·실제 제약 이름·검증 범위는 [PostgreSQL 검증 기록](postgresql-verification.md)에 정리했다.
+#19에서는 Compose의 PostgreSQL 17과 `postgres` 프로파일을 추가하고 JPA 표준 CHECK 제약으로 평가값을 제한했다. H2와 PostgreSQL에서 기존 테스트 39개가 각각 통과했다. PostgreSQL의 제약·닉네임 비교 정책·핵심 흐름·무평가 채택·재시작 후 데이터 유지를 확인했으며 배포 프로파일은 만들지 않았다.
 
 개정 전 개요 PDF는 `archive/moasseugi-overview-before-simplification.pdf`에 보관한다. 현재 요구사항은 이 문서와 API·DB·프론트 설계를 따른다.
