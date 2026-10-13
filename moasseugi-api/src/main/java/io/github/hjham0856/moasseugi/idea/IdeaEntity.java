@@ -12,10 +12,12 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
  * 한 참가자의 아이디어를 저장한다. 참가자별 하나라는 규칙은 DB의 고유 제약으로도 보장한다.
+ * 생성 시각은 결과에서 아이디어를 생성순으로 보여주는 기준이며 내용을 수정해도 바뀌지 않는다.
  */
 @Entity
 @Table(name = "ideas", uniqueConstraints = {
@@ -36,6 +38,9 @@ public class IdeaEntity {
     @Column(nullable = false, columnDefinition = "text")
     private String content;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
     protected IdeaEntity() {
     }
 
@@ -45,6 +50,7 @@ public class IdeaEntity {
     public IdeaEntity(ParticipantEntity participant, String content) {
         this.participant = participant;
         this.content = content;
+        this.createdAt = Instant.now();
     }
 
     public UUID getId() {
@@ -53,6 +59,10 @@ public class IdeaEntity {
 
     public String getContent() {
         return content;
+    }
+
+    public ParticipantEntity getParticipant() {
+        return participant;
     }
 
     /**
