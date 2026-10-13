@@ -173,6 +173,18 @@ async function transition() {
       session.value = detail
       transitionConfirm.value = null
     }
+
+    // 작성 마감 직전에 들어온 참가자도 목록에 남도록 마지막으로 한 번 더 조회한다.
+    // 이 조회의 실패는 전환 실패가 아니므로 오류로 알리지 않는다.
+    if (action === 'closeWriting') {
+      getSessionParticipants(id)
+        .then((latest) => {
+          if (id === sessionId.value) {
+            participants.value = latest
+          }
+        })
+        .catch(() => {})
+    }
   } catch (error) {
     if (id === sessionId.value) {
       transitionError.value = describeError(error)
