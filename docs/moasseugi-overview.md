@@ -75,4 +75,6 @@ Security·JWT·OpenAPI 생성기 설정은 #1에서, 공통 오류코드·Busine
 
 #17에서는 진행자 관리 화면(`/s/:sessionId/manage`)을 만들어 QR·링크 공유, 참가자 목록, 단계 전환 조작을 안건 화면에서 옮겨 왔다. 안건 화면의 결과 단계에는 평가 분포를 좋음·괜찮음·별로 막대와 인원수로 보여 주는 결과 목록을 두었고 진행자가 한 번 채택할 수 있다. 채택작에만 작성자 닉네임이 표시된다. 결과는 링크를 가진 누구나 조회하며, 채택 전까지는 3초 폴링을 이어 가 다른 브라우저가 채택을 확인한다.
 
+#18에서는 로컬 개발 환경의 연동 설정을 다시 확인하고 실행 방법을 루트 `README.md`에 정리했다. API context-path `/api`, 프론트 기본 API 주소 `http://localhost:8080/api`, `local` 프로파일의 `http://localhost:5173` CORS(GET·POST·PUT, `X-Participant-Token` 허용)가 서로 맞고, 공유 주소와 QR은 현재 웹 origin의 `/s/:sessionId`만 담아 참가 키를 포함하지 않음을 확인했다. 키 분실 시 복구 없음, 진행자 키 분실 시 관리 불가, H2 재시작 시 데이터 초기화를 현재 제한으로 문서화했고, Vite 기본 README와 기본 파비콘을 이 프로젝트용 설명과 SVG 파비콘으로 바꿨다. 배포·로그인·새 인프라는 범위 밖이며 PostgreSQL 전환은 #19에서 한다.
+
 개정 전 개요 PDF는 `archive/moasseugi-overview-before-simplification.pdf`에 보관한다. 현재 요구사항은 이 문서와 API·DB·프론트 설계를 따른다.
