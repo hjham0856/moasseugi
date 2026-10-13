@@ -1,10 +1,10 @@
 package io.github.hjham0856.moasseugi.session;
 
+import io.github.hjham0856.moasseugi.idea.IdeaEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import io.github.hjham0856.moasseugi.idea.IdeaEntity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
