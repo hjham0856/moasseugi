@@ -59,8 +59,6 @@ public class ParticipantService {
         }
 
         String participantToken = participantTokenGenerator.generate();
-        // 확인과 저장 사이에 같은 닉네임이 동시에 들어오면 DB 유일 제약이 막는다.
-        // 드문 경우라 별도 응답을 두지 않고 예상 밖 오류로 처리한다.
         ParticipantEntity participant = participantRepository.save(
                 new ParticipantEntity(session, nickname, participantToken, false));
 

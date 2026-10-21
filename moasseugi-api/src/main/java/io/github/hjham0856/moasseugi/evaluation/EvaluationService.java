@@ -94,8 +94,6 @@ public class EvaluationService {
             return new Response(idea.getId(), evaluation.getValue());
         }
 
-        // 같은 아이디어에 대한 첫 평가가 동시에 들어오면 둘 다 기존 평가가 없다고 보지만, DB 유일 제약이 하나만 남긴다.
-        // 드문 경우라 별도 응답을 두지 않고 예상 밖 오류로 처리한다.
         EvaluationEntity evaluation = evaluationRepository.save(
                 new EvaluationEntity(participant, idea, request.value().shortValue()));
 

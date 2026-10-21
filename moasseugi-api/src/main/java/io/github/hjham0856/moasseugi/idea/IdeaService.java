@@ -55,8 +55,6 @@ public class IdeaService {
             return toResponse(idea);
         }
 
-        // 같은 참가자의 첫 저장이 동시에 들어오면 둘 다 기존 아이디어가 없다고 보지만, DB 유일 제약이 하나만 남긴다.
-        // 드문 경우라 별도 응답을 두지 않고 예상 밖 오류로 처리한다.
         return toResponse(ideaRepository.save(new IdeaEntity(participant, request.content())));
     }
 
