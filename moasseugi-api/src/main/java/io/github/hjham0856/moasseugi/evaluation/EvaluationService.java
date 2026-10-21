@@ -9,15 +9,12 @@ import io.github.hjham0856.moasseugi.participant.CurrentParticipantService;
 import io.github.hjham0856.moasseugi.participant.ParticipantEntity;
 import io.github.hjham0856.moasseugi.session.SessionRepository;
 import io.github.hjham0856.moasseugi.session.SessionStatus;
-import org.hibernate.exception.ConstraintViolationException;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -76,7 +73,7 @@ public class EvaluationService {
      * EVALUATING에서 같은 안건의 남의 아이디어를 평가하고, 기존 선택이 있으면 값을 갱신한다.
      *
      * @throws ResponseStatusException 안건·아이디어가 없으면 404, 키가 유효하지 않으면 401,
-     *         본인 아이디어이면 403, 단계가 다르거나 최초 평가가 동시에 중복되면 409
+     *         본인 아이디어이면 403, 단계가 다르면 409
      */
     @Transactional
     public Response putEvaluation(UUID sessionId, String participantToken, WriteRequest request) {
@@ -97,19 +94,12 @@ public class EvaluationService {
             return new Response(idea.getId(), evaluation.getValue());
         }
 
-        try {
-            EvaluationEntity evaluation = evaluationRepository.saveAndFlush(
-                    new EvaluationEntity(participant, idea, request.value().shortValue()));
+        // 같은 아이디어에 대한 첫 평가가 동시에 들어오면 둘 다 기존 평가가 없다고 보지만, DB 유일 제약이 하나만 남긴다.
+        // 드문 경우라 별도 응답을 두지 않고 예상 밖 오류로 처리한다.
+        EvaluationEntity evaluation = evaluationRepository.save(
+                new EvaluationEntity(participant, idea, request.value().shortValue()));
 
-            return new Response(idea.getId(), evaluation.getValue());
-        } catch (DataIntegrityViolationException e) {
-            if (isParticipantIdeaUniqueViolation(e)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "평가가 동시에 저장되었습니다. 다시 선택해 주세요.");
-            }
-
-            throw e;
-        }
+        return new Response(idea.getId(), evaluation.getValue());
     }
 
     private ParticipantEntity requireEvaluatingParticipant(UUID sessionId, String participantToken) {
@@ -123,22 +113,5 @@ public class EvaluationService {
         }
 
         return participant;
-    }
-
-    /**
-     * 동시 최초 저장으로 생긴 참가자·아이디어 고유 제약 위반만 재시도 가능한 충돌로 분류한다.
-     */
-    private boolean isParticipantIdeaUniqueViolation(DataIntegrityViolationException e) {
-        Throwable cause = e;
-        while (cause != null) {
-            if (cause instanceof ConstraintViolationException violation) {
-                String name = violation.getConstraintName();
-                return name != null && name.toLowerCase(Locale.ROOT)
-                        .contains("uk_evaluation_participant_idea");
-            }
-            cause = cause.getCause();
-        }
-
-        return false;
     }
 }

@@ -6,14 +6,11 @@ import io.github.hjham0856.moasseugi.participant.CurrentParticipantService;
 import io.github.hjham0856.moasseugi.participant.ParticipantEntity;
 import io.github.hjham0856.moasseugi.session.SessionRepository;
 import io.github.hjham0856.moasseugi.session.SessionStatus;
-import org.hibernate.exception.ConstraintViolationException;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,7 +40,7 @@ public class IdeaService {
      * 요청 내용의 공백 여부는 API 입력 검증에서 확인하며, 본문은 그대로 저장한다.
      *
      * @throws ResponseStatusException 안건이 없으면 404, 키가 유효하지 않으면 401,
-     *         작성 종료 또는 동시 최초 저장으로 중복이 발생하면 409
+     *         작성 종료이면 409
      */
     @Transactional
     public Response putIdea(UUID sessionId, String participantToken, WriteRequest request) {
@@ -58,16 +55,9 @@ public class IdeaService {
             return toResponse(idea);
         }
 
-        try {
-            return toResponse(ideaRepository.saveAndFlush(new IdeaEntity(participant, request.content())));
-        } catch (DataIntegrityViolationException e) {
-            if (isParticipantUniqueViolation(e)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "아이디어가 동시에 저장되었습니다. 다시 저장해 주세요.");
-            }
-
-            throw e;
-        }
+        // 같은 참가자의 첫 저장이 동시에 들어오면 둘 다 기존 아이디어가 없다고 보지만, DB 유일 제약이 하나만 남긴다.
+        // 드문 경우라 별도 응답을 두지 않고 예상 밖 오류로 처리한다.
+        return toResponse(ideaRepository.save(new IdeaEntity(participant, request.content())));
     }
 
     /**
@@ -97,22 +87,5 @@ public class IdeaService {
 
     private Response toResponse(IdeaEntity idea) {
         return new Response(idea.getId(), idea.getContent());
-    }
-
-    /**
-     * 동시 최초 저장으로 생긴 참가자 고유 제약 위반만 재시도 가능한 충돌로 분류한다.
-     * H2가 제약 이름에 정보를 덧붙이므로 포함 여부로 판별한다.
-     */
-    private boolean isParticipantUniqueViolation(DataIntegrityViolationException e) {
-        Throwable cause = e;
-        while (cause != null) {
-            if (cause instanceof ConstraintViolationException violation) {
-                String name = violation.getConstraintName();
-                return name != null && name.toLowerCase(Locale.ROOT).contains("uk_idea_participant");
-            }
-            cause = cause.getCause();
-        }
-
-        return false;
     }
 }
