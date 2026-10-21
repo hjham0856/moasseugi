@@ -9,7 +9,6 @@ import io.github.hjham0856.moasseugi.session.SessionRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -21,13 +20,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.UUID;
-import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -174,7 +170,7 @@ class IdeaControllerTest {
     }
 
     @Test
-    void databaseRejectsSecondIdeaForSameParticipantWithHandledConstraintName() throws Exception {
+    void databaseRejectsSecondIdeaForSameParticipant() throws Exception {
         // given: 참가자의 첫 아이디어가 DB에 저장되어 있다.
         when(participantTokenGenerator.generate()).thenReturn("idea-unique-host");
         String sessionId = createSession();
@@ -182,23 +178,10 @@ class IdeaControllerTest {
         ParticipantEntity participant = participantRepository.findBySession_IdAndParticipantToken(
                 UUID.fromString(sessionId), "idea-unique-host").orElseThrow();
 
-        // when: 같은 참가자 ID로 두 번째 행을 직접 저장한다.
-        DataIntegrityViolationException exception = assertThrows(DataIntegrityViolationException.class,
+        // when: 저장 전 확인을 거치지 않고 같은 참가자 ID로 두 번째 행을 직접 저장한다.
+        // then: 동시 저장에서도 아이디어가 하나만 남도록 DB가 중복을 거부한다.
+        assertThrows(DataIntegrityViolationException.class,
                 () -> ideaRepository.saveAndFlush(new IdeaEntity(participant, "중복 아이디어")));
-
-        // then: DB가 중복을 거부하고, Hibernate가 서비스의 409 분기에서 찾는 제약 이름을 제공한다.
-        Throwable cause = exception;
-        ConstraintViolationException violation = null;
-        while (cause != null) {
-            if (cause instanceof ConstraintViolationException found) {
-                violation = found;
-                break;
-            }
-            cause = cause.getCause();
-        }
-
-        assertNotNull(violation);
-        assertTrue(violation.getConstraintName().toLowerCase(Locale.ROOT).contains("uk_idea_participant"));
         assertEquals(1, ideaRepository.count());
     }
 

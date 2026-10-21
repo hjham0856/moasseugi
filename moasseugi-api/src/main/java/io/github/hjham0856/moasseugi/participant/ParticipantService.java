@@ -6,15 +6,12 @@ import io.github.hjham0856.moasseugi.session.SessionApiModels;
 import io.github.hjham0856.moasseugi.session.SessionEntity;
 import io.github.hjham0856.moasseugi.session.SessionRepository;
 import io.github.hjham0856.moasseugi.session.SessionStatus;
-import org.hibernate.exception.ConstraintViolationException;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -62,18 +59,10 @@ public class ParticipantService {
         }
 
         String participantToken = participantTokenGenerator.generate();
-        try {
-            ParticipantEntity participant = participantRepository.saveAndFlush(
-                    new ParticipantEntity(session, nickname, participantToken, false));
-            return new JoinResponse(toSummary(participant), participantToken);
-        } catch (DataIntegrityViolationException e) {
-            // 실패한 트랜잭션에서 재조회하지 않고 위반된 제약 이름으로만 동시 중복을 판별한다.
-            if (isNicknameUniqueViolation(e)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다.");
-            }
+        ParticipantEntity participant = participantRepository.save(
+                new ParticipantEntity(session, nickname, participantToken, false));
 
-            throw e;
-        }
+        return new JoinResponse(toSummary(participant), participantToken);
     }
 
     /**
@@ -97,24 +86,6 @@ public class ParticipantService {
     private SessionApiModels.ParticipantSummary toSummary(ParticipantEntity participant) {
         return new SessionApiModels.ParticipantSummary(
                 participant.getId(), participant.getNickname(), participant.isHost());
-    }
-
-    /**
-     * 닉네임 고유 제약 위반만 중복으로 분류하여 다른 무결성 오류를 숨기지 않는다.
-     * H2가 제약 이름에 스키마·인덱스 정보를 덧붙이므로 포함 여부로 판별한다.
-     */
-    private boolean isNicknameUniqueViolation(DataIntegrityViolationException e) {
-        Throwable cause = e;
-        while (cause != null) {
-            if (cause instanceof ConstraintViolationException violation) {
-                String name = violation.getConstraintName();
-                return name != null
-                        && name.toLowerCase(Locale.ROOT).contains("uk_participant_session_nickname");
-            }
-            cause = cause.getCause();
-        }
-
-        return false;
     }
 
     /**
