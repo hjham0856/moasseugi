@@ -68,6 +68,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -121,6 +123,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ParticipantSummary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -152,8 +156,6 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -187,6 +189,8 @@ paths:
                 nullable: true
                 allOf:
                 - $ref: '#/components/schemas/Idea'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -212,6 +216,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -243,6 +249,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EvaluationItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -306,6 +314,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -334,6 +344,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -648,7 +660,7 @@ components:
           example: 요청을 처리할 수 없습니다.
   responses:
     BadRequest:
-      description: 요청 형식 또는 입력값 오류
+      description: 요청 형식 또는 입력값 오류(안건 ID가 UUID 형식이 아닌 경우 포함)
       content:
         application/json:
           schema:
