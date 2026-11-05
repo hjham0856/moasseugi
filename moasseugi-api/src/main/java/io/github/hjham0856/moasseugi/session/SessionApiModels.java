@@ -1,7 +1,6 @@
 package io.github.hjham0856.moasseugi.session;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
@@ -15,7 +14,7 @@ public final class SessionApiModels {
     }
 
     public record CreateRequest(
-            @NotNull @Size(min = 1, max = 200) String title,
+            @NotBlank @Size(max = 200) String title,
             String description,
             @NotBlank @Size(max = 30) String nickname
     ) {

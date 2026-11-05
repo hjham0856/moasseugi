@@ -422,6 +422,7 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+          description: 공백뿐인 값은 거부합니다.
         description:
           type: string
           nullable: true
