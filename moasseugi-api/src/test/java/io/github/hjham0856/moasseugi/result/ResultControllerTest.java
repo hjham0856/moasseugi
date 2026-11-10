@@ -1,7 +1,7 @@
 package io.github.hjham0856.moasseugi.result;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import io.github.hjham0856.moasseugi.evaluation.EvaluationRepository;
 import io.github.hjham0856.moasseugi.idea.IdeaRepository;
 import io.github.hjham0856.moasseugi.participant.ParticipantRepository;

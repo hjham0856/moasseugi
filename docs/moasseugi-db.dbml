@@ -32,7 +32,7 @@ Table participants {
   id uuid [pk]
   session_id uuid [not null]
   nickname varchar(30) [not null, note: '같은 안건에서 중복 금지. 앞뒤 공백 제거 후 대소문자 구분, 내부 공백 유지']
-  participant_token varchar(255) [not null, unique, note: '안건별 랜덤 참가 키. 생성자에게도 발급. 만료·복구 정책 없음']
+  participant_token varchar(43) [not null, unique, note: '안건별 랜덤 참가 키. 생성자에게도 발급. 만료·복구 정책 없음']
   is_host boolean [not null, default: false]
   indexes {
     (session_id, nickname) [unique]
@@ -65,7 +65,6 @@ Table evaluations {
   value smallint [not null, note: '-1 별로, 0 괜찮음, 1 좋음']
   indexes {
     (participant_id, idea_id) [unique]
-    idea_id
   }
   Note: '''
   선택할 때마다 저장하며 기존 조합이면 value를 갱신한다. 별도 제출 없음.

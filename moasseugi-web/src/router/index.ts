@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 /**
- * 첫 흐름에 필요한 세 화면만 둔다.
+ * 홈·생성·안건·관리, 네 화면만 둔다.
  * 단계·권한 검사는 전역 가드가 아니라 서버 응답과 각 화면의 안내로 처리한다.
  */
 const router = createRouter({
